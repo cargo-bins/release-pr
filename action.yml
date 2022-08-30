@@ -1,0 +1,55 @@
+name: Cargo Release PR
+description: Create a PR for a release of a Rust/Cargo crate, using cargo-release
+inputs:
+  crate-name:
+    description: Crate to release, if the repo has more than one
+    required: false
+  crate-path:
+    description: Path to the crate; defaults to resolving it from workspace
+    required: false
+  version:
+    description: Version to release, or one of the keywords `major`, `minor`, `patch`
+    required: true
+  title:
+    description: Literal or template for the title of the PR
+    required: true
+    default: "release: {crate-name} v{version}"
+  label:
+    description: Label name to apply to created PR
+    required: false
+  pr-template:
+    description: Template for the body of the PR; overrides all other pr- fields
+    required: false
+  pr-template-file:
+    description: Template file for the body of the PR; overrides all other pr- fields
+    required: false
+  pr-merge-strategy:
+    description: Merge strategy that should be used (`squash`, `merge`, `rebase`, `bors`)
+    required: true
+    default: squash
+  pr-release-notes:
+    description: Include a release notes section in the PR body
+    required: true
+    default: false
+  git-user-name:
+    description: Name of the git user that will commit the release
+    required: true
+    default: github-actions
+  git-user-email:
+    description: Email of the git user that will commit the release
+    required: true
+    default: github-actions@github.com
+  branch-prefix:
+    description: Prefix of the release branch created for the PR
+    required: true
+    default: release
+outputs:
+  pr-branch:
+    description: Branch name of the release PR
+  pr-url:
+    description: URL to the release PR
+  version:
+    description: The version created for the PR
+runs:
+  using: node16
+  main: index.js
