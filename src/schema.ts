@@ -7,7 +7,7 @@ const SCHEMA = object({
 	version: string()
 		.lowercase()
 		.matches(
-			/^(?:release|patch|minor|major|alpha|beta|rc|\d+[.]\d+[.]\d+(?:-\w+(?:[.]\d+)?)?(?:+\w+)?)$/
+			/^(?:release|patch|minor|major|alpha|beta|rc|\d+[.]\d+[.]\d+(?:-\w+(?:[.]\d+)?)?(?:\+\w+)?)$/
 		)
 		.required(),
 	crate: object({
