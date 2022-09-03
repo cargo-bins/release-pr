@@ -12,7 +12,7 @@ try {
 	const inputs = await getInputs();
 	await setGithubUser(inputs.git);
 
-	const baseBranch = inputs.baseBranch || (await getCurrentBranch());
+	const baseBranch = inputs.baseBranch || (await getDefaultBranch());
 	const branchName = await makeBranch(inputs.version, inputs.git);
 
 	const crate = await findCrate(inputs.crate);
@@ -31,8 +31,12 @@ async function setGithubUser({ name, email }) {
 	await exec.exec("git", ["config", "user.email", email]);
 }
 
-async function getCurrentBranch() {
-	// TODO
+async function getDefaultBranch() {
+	const octokit = github.getOctokit();
+	const {
+		data: { default_branch },
+	} = await octokit.request("GET /repos/{owner}/{repo}", repoSplit());
+	return default_branch;
 }
 
 async function makeBranch(version, { branchPrefix, branchSeparator }) {
@@ -109,12 +113,11 @@ async function makePR(inputs, crate, baseBranch, branchName, newVersion) {
 	}
 	const body = render(template, vars);
 
-	const [owner, repo] = github.context.github.repo.split('/', 2);
-
 	const octokit = github.getOctokit();
-	const { data: { url } } = await octokit.request("POST /repos/{owner}/{repo}/pulls", {
-		owner,
-		repo,
+	const {
+		data: { url },
+	} = await octokit.request("POST /repos/{owner}/{repo}/pulls", {
+		...repoSplit(),
 		title,
 		body,
 		head: branchName,
@@ -129,4 +132,9 @@ async function makePR(inputs, crate, baseBranch, branchName, newVersion) {
 
 function render(template, vars) {
 	return ejs.render(template, vars);
+}
+
+function repoSplit() {
+	const [owner, repo] = github.context.github.repo.split("/", 2);
+	return { owner, repo };
 }
