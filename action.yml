@@ -66,4 +66,4 @@ outputs:
     description: The version created for the PR
 runs:
   using: node16
-  main: index.js
+  main: dist/index.js
