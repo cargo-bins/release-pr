@@ -20,8 +20,6 @@ try {
 
 	await pushBranch(branchName);
 	await makePR(inputs, crate, baseBranch, branchName, newVersion);
-
-	// const payload = github.context.payload;
 } catch (error) {
 	core.setFailed(error.message);
 }
@@ -111,37 +109,20 @@ async function makePR(inputs, crate, baseBranch, branchName, newVersion) {
 	}
 	const body = render(template, vars);
 
-	const args = [
-		["pr", "create"],
-		["--title", title],
-		["--body", body],
-		["--base", baseBranch],
-		["--head", branchName],
-	].flat();
+	const [owner, repo] = github.context.github.repo.split('/', 2);
 
-	if (pr.label) {
-		args.push("--label", label);
-	}
-
-	// TODO: run with Octokit
-	// const octokit = github.getOctokit();
-
-	let toolOutput = "";
-	await exec.exec("gh", args, {
-		env: {
-			GITHUB_TOKEN, // TODO: how to get this?
-		},
-		listeners: {
-			stdout(data) {
-				toolOutput += data;
-			},
-		},
+	const octokit = github.getOctokit();
+	const { data: { url } } = await octokit.request("POST /repos/{owner}/{repo}/pulls", {
+		owner,
+		repo,
+		title,
+		body,
+		head: branchName,
+		base: baseBranch,
 	});
 
-	// parse+normalise URL
-	const prUrl = new URL(toolOutput.trim()).toString();
-	console.info(`PR opened: ${prUrl}`);
-	core.setOutput("pr-url", prUrl);
+	console.info(`PR opened: ${url}`);
+	core.setOutput("pr-url", url);
 }
 
 function render(template, vars) {
