@@ -50,7 +50,8 @@ const SCHEMA = object({
 		.required()
 }).noUnknown();
 
-export default async function getInputs() {
+export type InputsType = Awaited<ReturnType<typeof SCHEMA.validate>>;
+export default async function getInputs(): Promise<InputsType> {
 	debug('validating inputs');
 	const inputs = await SCHEMA.validate({
 		githubToken: getInput('github-token'),
@@ -82,5 +83,3 @@ export default async function getInputs() {
 	debug(`inputs: ${JSON.stringify(inputs)}`);
 	return inputs;
 }
-
-export type InputsType = Awaited<ReturnType<typeof getInputs>>;

@@ -15,23 +15,40 @@ import {render as _render} from 'ejs';
 
 import getInputs, {InputsType} from './schema';
 import {Octokit} from '@octokit/core';
-import {Api} from '@octokit/plugin-rest-endpoint-methods/dist-types/types';
 
 (async () => {
-	const inputs = await getInputs();
-	await setGithubUser(inputs.git);
+	try {
+		const inputs = await getInputs();
+		await setGithubUser(inputs.git);
 
-	const octokit = getOctokit(inputs.githubToken);
+		const octokit = getOctokit(inputs.githubToken);
 
-	const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
-	const branchName = await makeBranch(inputs.version, inputs.git);
+		const baseBranch =
+			inputs.baseBranch || (await getDefaultBranch(octokit));
+		const branchName = await makeBranch(inputs.version, inputs.git);
 
-	const crate = await findCrate(inputs.crate);
-	const newVersion = await runCargoRelease(crate, inputs.version, branchName);
+		const crate = await findCrate(inputs.crate);
+		const newVersion = await runCargoRelease(
+			crate,
+			inputs.version,
+			branchName
+		);
 
-	await pushBranch(branchName);
-	await makePR(octokit, inputs, crate, baseBranch, branchName, newVersion);
-})().catch(error => setFailed(error.message ?? error));
+		await pushBranch(branchName);
+		await makePR(
+			octokit,
+			inputs,
+			crate,
+			baseBranch,
+			branchName,
+			newVersion
+		);
+	} catch (error: unknown) {
+		if (error instanceof Error) setFailed(error.message);
+		else if (typeof error === 'string') setFailed(error);
+		else setFailed('An unknown error has occurred');
+	}
+})();
 
 async function setGithubUser({
 	name,
@@ -46,7 +63,7 @@ async function setGithubUser({
 	await execAndSucceed('git', ['config', 'user.email', email]);
 }
 
-async function getDefaultBranch(octokit: Octokit & Api): Promise<string> {
+async function getDefaultBranch(octokit: Octokit): Promise<string> {
 	debug("asking github API for repo's default branch");
 	const {
 		data: {default_branch}
@@ -60,7 +77,7 @@ async function makeBranch(
 		branchPrefix,
 		branchSeparator
 	}: {branchPrefix: string; branchSeparator: string}
-) {
+): Promise<string> {
 	const branchName = [branchPrefix, version].join(branchSeparator);
 	info(`Creating branch ${branchName}`);
 
@@ -163,7 +180,7 @@ async function pushBranch(branchName: string): Promise<void> {
 }
 
 async function makePR(
-	octokit: Octokit & Api,
+	octokit: Octokit,
 	inputs: InputsType,
 	crate: CrateDetails,
 	baseBranch: string,
@@ -281,7 +298,10 @@ async function toolExists(name: string): Promise<boolean> {
 	}
 }
 
-async function execWithOutput(program: string, args: string[]) {
+async function execWithOutput(
+	program: string,
+	args: string[]
+): Promise<string> {
 	debug(`running ${program} with arguments: ${JSON.stringify(args)}`);
 	const {exitCode, stdout} = await getExecOutput(program, args);
 	if (exitCode !== 0)
@@ -289,7 +309,7 @@ async function execWithOutput(program: string, args: string[]) {
 	return stdout;
 }
 
-async function pkgid({name, path}: CrateArgs = {}) {
+async function pkgid({name, path}: CrateArgs = {}): Promise<CrateDetails> {
 	debug(`checking and parsing pkgid for name=${name} path=${path}`);
 
 	const args = ['pkgid'];
