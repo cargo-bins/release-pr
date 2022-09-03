@@ -93,6 +93,7 @@ async function runCargoRelease(crate, version, branchName) {
 		}
 	}
 
+	core.debug("running cargo release");
 	await execAndSucceed(
 		"cargo",
 		[
@@ -113,9 +114,15 @@ async function runCargoRelease(crate, version, branchName) {
 		{ cwd: crate.path }
 	);
 
-	// figure out version just created
-	// core.setOutput('version', newVersion);
-	// return newVersion;
+	core.debug("checking version after releasing");
+	const { version: newVersion } = await pkgid(crate.name, crate.path);
+	core.info(`new version: ${newVersion}`);
+
+	if (newVersion === crate.version)
+		throw new Error("New and old versions are identical, not proceeding");
+
+	core.setOutput("version", newVersion);
+	return newVersion;
 }
 
 async function pushBranch(branchName) {
