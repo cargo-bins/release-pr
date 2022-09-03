@@ -147,29 +147,29 @@ PR title and body templates are [EJS]. The following variables are available:
 
 ```typescript
 interface TemplateVars {
-	pr: {
-		title: string; // value of the `pr-title` input
-		label?: string;// value of the `pr-label` input
-		draft: boolean; // value of the `pr-draft` input
-		modifiable: boolean; // value of the `pr-modifiable` input
+  pr: {
+    title: string; // value of the `pr-title` input
+    label?: string; // value of the `pr-label` input
+    draft: boolean; // value of the `pr-draft` input
+    modifiable: boolean; // value of the `pr-modifiable` input
 
-		template?: string; // value of the `pr-template` input
-		templateFile?: string; // value of the `pr-template-file` input
+    template?: string; // value of the `pr-template` input
+    templateFile?: string; // value of the `pr-template-file` input
 
-		mergeStrategy: string; // value of the `pr-merge-strategy` input
-		releaseNotes: boolean; // value of the `pr-release-notes` input
-	};
-	crate: {
-		name: string; // the name of the crate being released
-		path: string; // the full/absolute path to the crate
-	};
-	version: {
-		previous: string; // the version of the crate prior to any changes
-		actual: string; // the version of the crate after being released
-		desired: string; // the value of the `version` input
-	};
-	branchName: string; // the name of the branch used for the PR
-	title?: string; // the rendered title of the PR
+    mergeStrategy: string; // value of the `pr-merge-strategy` input
+    releaseNotes: boolean; // value of the `pr-release-notes` input
+  };
+  crate: {
+    name: string; // the name of the crate being released
+    path: string; // the full/absolute path to the crate
+  };
+  version: {
+    previous: string; // the version of the crate prior to any changes
+    actual: string; // the version of the crate after being released
+    desired: string; // the value of the `version` input
+  };
+  branchName: string; // the name of the branch used for the PR
+  title?: string; // the rendered title of the PR
                   // this is only available to the PR body template
 }
 ```
