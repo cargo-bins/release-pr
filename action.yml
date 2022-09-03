@@ -13,15 +13,15 @@ inputs:
   title:
     description: Literal or template for the title of the PR
     required: true
-    default: "release: {crate-name} v{version}"
+    default: "release: <%= crate.name %> v<%= version %>"
   label:
     description: Label name to apply to created PR
     required: false
   pr-template:
-    description: Template for the body of the PR; overrides all other pr- fields
+    description: Template for the body of the PR (mutually exclusive with `pr-template-file`)
     required: false
   pr-template-file:
-    description: Template file for the body of the PR; overrides all other pr- fields
+    description: Template file for the body of the PR (mutually exclusive with `pr-template`)
     required: false
   pr-merge-strategy:
     description: Merge strategy that should be used (`squash`, `merge`, `rebase`, `bors`)

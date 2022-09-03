@@ -1,8 +1,11 @@
+const fs = require('fs').promises;
+const path = require('path');
+
 const core = require("@actions/core");
 const exec = require("@actions/exec");
 const github = require("@actions/github");
+const ejs = require("ejs");
 const yup = require('yup');
-const fs = require('fs').promises;
 
 const SCHEMA = yup.object({
 	version: yup.string().lowercase().matches(/^(?:release|patch|minor|major|alpha|beta|rc|\d+[.]\d+[.]\d+(?:-\w+(?:[.]\d+)?)?(?:+\w+)?)$/).required(),
@@ -18,37 +21,6 @@ const SCHEMA = yup.object({
 	}).noUnknown().required(),
 	// TODO: PR/title template options
 }).noUnknown();
-
-const DEFAULT_TEMPLATE = `
-This is a release PR for version **{version}**.
-
-**Use squash merge.**
-Upon merging, this will automatically build the CLI and create a GitHub release.
-You still need to manually publish the cargo crate.
-
-\`\`\`
-$ git pull
-$ git switch --detach v{version}
-$ cargo publish
-\`\`\`
-
----
-
-_Edit release notes into the section below:_
-
-<!-- do not change or remove this heading -->
-### Release notes
-
-_Binstall is a tool to fetch and install Rust-based executables as binaries. It aims to be a drop-in replacement for \`cargo install\` in most cases. Install it today with \`cargo install cargo-binstall\`, from the binaries below, or if you already have it, upgrade with \`cargo binstall cargo-binstall\`._
-
-#### In this release:
-
--
-
-#### Other changes:
-
--
-`;
 
 try {
 	const inputs = await SCHEMA.validate({
@@ -129,6 +101,8 @@ async function pushBranch(branchName) {
 
 async function makePR({ crate, title, label, pr }, baseBranch, branchName, newVersion) {
 	const vars = {
+		pr,
+		crate,
 		version: newVersion,
 		branchName,
 		crateName: crate.name,
@@ -143,7 +117,7 @@ async function makePR({ crate, title, label, pr }, baseBranch, branchName, newVe
 		template = await fs.readFile(pr.templateFile);
 	}
 	if (template.trim().length === 0) {
-		template = DEFAULT_TEMPLATE;
+		template = await fs.readFile(path.join(__dirname, 'default-template.ejs'));
 	}
 	const body = render(template, vars);
 
@@ -180,6 +154,5 @@ async function makePR({ crate, title, label, pr }, baseBranch, branchName, newVe
 }
 
 function render(template, vars) {
-	// TODO
-	// needs logic
+	return ejs.render(template, vars);
 }

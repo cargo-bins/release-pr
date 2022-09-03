@@ -1,0 +1,29 @@
+This is a release PR for version **<%= version.actual %>**<%
+    if (version.actual != version.desired) {
+%> (performing a <%= version.desired %> bump).<%
+    } else {
+%>.<%
+    }
+%>
+
+<% if (pr.mergeStrategy == "merge") { %>
+**Use a merge commit.**
+<% } else if (pr.mergeStrategy == "rebase") { %>
+**Use rebase merge.**
+<% } else if (pr.mergeStrategy == "squash") { %>
+**Use squash merge.**
+<% } else if (pr.mergeStrategy == "bors") { %>
+**Merge by commenting:**
+| bors r+ |
+|:-:|
+<% } %>
+
+<% if (pr.releaseNotes) { %>
+---
+
+_Edit release notes into the section below:_
+
+<!-- do not change or remove this heading -->
+### Release notes
+
+<% } %>
