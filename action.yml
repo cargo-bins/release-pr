@@ -16,7 +16,7 @@ inputs:
   pr-title:
     description: Literal or template for the title of the PR
     required: true
-    default: "release: <%= crate.name %> v<%= version %>"
+    default: "release: <%= crate.name %> v<%= version.actual %>"
   pr-label:
     description: Label name to apply to created PR
     required: false

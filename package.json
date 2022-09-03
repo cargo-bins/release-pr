@@ -9,7 +9,7 @@
 		"format": "prettier --write '**/*.ts'",
 		"format-check": "prettier --check '**/*.ts'",
 		"lint": "eslint src/**/*.ts",
-		"package": "ncc build --source-map --license LICENSE",
+		"package": "ncc build --source-map --license LICENSE && cp src/default-template.ejs dist/",
 		"test": "jest",
 		"all": "npm run build && npm run format && npm run lint && npm run package && npm test"
 	},
