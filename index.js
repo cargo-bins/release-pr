@@ -55,7 +55,20 @@ async function findCrate({ name, path }) {
 }
 
 async function runCargoRelease(crate, version, branchName) {
-	// get cargo-release somehow if not already available
+	core.debug("checking for presence of cargo-release");
+	if (!(await toolExists("cargo-release"))) {
+		core.warning(
+			"cargo-release is not available, attempting to install it"
+		);
+
+		if (await toolExists("cargo-binstall")) {
+			core.info("trying to install cargo-release with cargo-binstall");
+			await execAndSucceed("cargo", ["binstall", "cargo-release"]);
+		} else {
+			core.info("trying to install cargo-release with cargo-install");
+			await execAndSucceed("cargo", ["install", "cargo-release"]);
+		}
+	}
 
 	await execAndSucceed(
 		"cargo",
@@ -159,3 +172,14 @@ async function execAndSucceed(program, args) {
 	if (exit !== 0) throw new Error(`${program} exited with code ${exit}`);
 }
 
+async function toolExists(name) {
+	try {
+		core.debug(`running "${name} --version"`);
+		const code = await exec.exec(name, "--version");
+		core.debug(`program exited with code ${code}`);
+		return code === 0;
+	} catch (err) {
+		core.debug(`program errored: ${err}`)
+		return false;
+	}
+}
