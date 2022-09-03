@@ -23,17 +23,20 @@
 		"ejs": "^3.1.8",
 		"yup": "^0.32.11"
 	},
+	"engines": {
+		"node": "^16.16.0"
+	},
 	"devDependencies": {
 		"@types/ejs": "^3.1.1",
-		"@types/node": "^16.10.5",
+		"@types/node": "^18.7.14",
 		"@typescript-eslint/parser": "^5.8.1",
-		"@vercel/ncc": "^0.31.1",
+		"@vercel/ncc": "^0.34.0",
 		"eslint": "^8.0.1",
 		"eslint-plugin-github": "^4.3.2",
-		"eslint-plugin-jest": "^25.3.2",
+		"eslint-plugin-jest": "^27.0.1",
 		"jest": "^27.2.5",
 		"js-yaml": "^4.1.0",
-		"prettier": "2.5.1",
+		"prettier": "^2.7.1",
 		"ts-jest": "^27.1.2",
 		"typescript": "^4.4.4"
 	}
