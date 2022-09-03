@@ -126,8 +126,12 @@ async function makePR(inputs, crate, baseBranch, branchName, newVersion) {
 	const { pr } = inputs;
 	const vars = {
 		pr,
-		crate,
+		crate: {
+			name: crate.name,
+			path: crate.path,
+		},
 		version: {
+			previous: crate.version,
 			actual: newVersion,
 			desired: inputs.version,
 		},
@@ -229,10 +233,12 @@ async function pkgid(name = null, path = null) {
 	if (protocol !== "file:")
 		throw new Error("pkgid is returning a non-local crate");
 
-	core.debug(`got pathname: ${pathname}`);
-	const crateName = hash.split("#", 2)[1]?.split("@")[0];
+	const [crateName, version] = hash.split("#", 2)[1]?.split("@", 2) ?? [];
 	if (!crateName) throw new Error(`failed to parse crate name from ${hash}`);
-	core.debug(`got crate name: ${crateName}`);
 
-	return { name: crateName, path: pathname };
+	core.debug(`got pathname: ${pathname}`);
+	core.debug(`got crate name: ${crateName}`);
+	core.debug(`got crate version: ${version}`);
+
+	return { name: crateName, path: pathname, version };
 }
