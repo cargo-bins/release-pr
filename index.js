@@ -119,6 +119,8 @@ async function makePR(inputs, crate, baseBranch, branchName, newVersion) {
 		body,
 		head: branchName,
 		base: baseBranch,
+		maintainer_can_modify: pr.modifiable,
+		draft: pr.draft,
 	});
 
 	console.info(`PR opened: ${url}`);

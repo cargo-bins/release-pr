@@ -17,6 +17,14 @@ inputs:
   pr-label:
     description: Label name to apply to created PR
     required: false
+  pr-draft:
+    description: Create the release PR as Draft
+    required: true
+    default: false
+  pr-modifiable:
+    description: Allow maintainers to modify the release PR
+    required: true
+    default: true
   pr-template:
     description: Template for the body of the PR (mutually exclusive with `pr-template-file`)
     required: false

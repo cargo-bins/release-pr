@@ -25,6 +25,8 @@ const SCHEMA = object({
 	pr: object({
 		title: string().required(),
 		label: string().optional(),
+		draft: bool().default(false),
+		modifiable: bool().default(true),
 
 		template: string().optional(),
 		templateFile: string().optional(),
@@ -61,6 +63,8 @@ async function getInputs() {
 		pr: {
 			title: getInput("pr-title"),
 			label: getInput("pr-label"),
+			draft: getInput("pr-draft"),
+			modifiable: getInput("pr-modifiable"),
 
 			template: getInput("pr-template"),
 			templateFile: getInput("pr-template-file"),
