@@ -1,4 +1,4 @@
-const { getInput } = require("@actions/core");
+const { debug, getInput } = require("@actions/core");
 const { object, string, bool } = require("yup");
 
 const SCHEMA = object({
@@ -49,6 +49,7 @@ const SCHEMA = object({
 }).noUnknown();
 
 async function getInputs() {
+	core.debug("validating inputs");
 	const inputs = await SCHEMA.validate({
 		version: getInput("version"),
 		crate: {
@@ -75,8 +76,8 @@ async function getInputs() {
 	});
 
 	delete inputs.templateExclusive;
+	debug(`inputs: ${JSON.stringify(inputs)}`);
 	return inputs;
 }
 
-exports.SCHEMA = SCHEMA;
 exports.getInputs = getInputs;

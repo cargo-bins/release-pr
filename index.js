@@ -25,13 +25,14 @@ try {
 }
 
 async function setGithubUser({ name, email }) {
-	console.info(`Setting git user details: ${name} <${email}>`);
+	core.info(`Setting git user details: ${name} <${email}>`);
 
-	await exec.exec("git", ["config", "user.name", name]);
-	await exec.exec("git", ["config", "user.email", email]);
+	await execAndSucceed("git", ["config", "user.name", name]);
+	await execAndSucceed("git", ["config", "user.email", email]);
 }
 
 async function getDefaultBranch() {
+	core.debug("asking github API for repo's default branch");
 	const octokit = github.getOctokit();
 	const {
 		data: { default_branch },
@@ -41,9 +42,9 @@ async function getDefaultBranch() {
 
 async function makeBranch(version, { branchPrefix, branchSeparator }) {
 	const branchName = [branchPrefix, version].join(branchSeparator);
-	console.info(`Creating branch ${branchName}`);
+	core.info(`Creating branch ${branchName}`);
 
-	await exec.exec("git", ["switch", "-c", branchName]);
+	await execAndSucceed("git", ["switch", "-c", branchName]);
 	core.setOutput("pr-branch", branchName);
 	return branchName;
 }
@@ -56,7 +57,7 @@ async function findCrate({ name, path }) {
 async function runCargoRelease(crate, version, branchName) {
 	// get cargo-release somehow if not already available
 
-	await exec.exec(
+	await execAndSucceed(
 		"cargo",
 		[
 			"release",
@@ -82,7 +83,7 @@ async function runCargoRelease(crate, version, branchName) {
 }
 
 async function pushBranch(branchName) {
-	await exec.exec("git", ["push", "origin", branchName]);
+	await execAndSucceed("git", ["push", "origin", branchName]);
 }
 
 async function makePR(inputs, crate, baseBranch, branchName, newVersion) {
@@ -99,20 +100,33 @@ async function makePR(inputs, crate, baseBranch, branchName, newVersion) {
 		cratePath: crate.path,
 	};
 
+	core.debug(`template variables: ${JSON.stringify(vars)}`);
+
+	core.debug("rendering PR title template");
 	const title = render(pr.title, vars);
+	core.debug(`title rendered to "${title}"`);
+
 	vars.title = title;
 
 	let template = pr.template;
 	if (pr.templateFile) {
+		core.debug(`reading template from file: ${pr.templateFile}`);
 		template = await fs.readFile(pr.templateFile);
+	} else {
+		core.debug("using template from input");
 	}
+
 	if (template.trim().length === 0) {
+		core.debug("using default template");
 		template = await fs.readFile(
 			path.join(__dirname, "default-template.ejs")
 		);
 	}
+
+	core.debug("rendering PR body template");
 	const body = render(template, vars);
 
+	core.debug("making request to github to create PR");
 	const octokit = github.getOctokit();
 	const {
 		data: { url },
@@ -126,7 +140,7 @@ async function makePR(inputs, crate, baseBranch, branchName, newVersion) {
 		draft: pr.draft,
 	});
 
-	console.info(`PR opened: ${url}`);
+	core.info(`PR opened: ${url}`);
 	core.setOutput("pr-url", url);
 }
 
@@ -138,3 +152,10 @@ function repoSplit() {
 	const [owner, repo] = github.context.github.repo.split("/", 2);
 	return { owner, repo };
 }
+
+async function execAndSucceed(program, args) {
+	core.debug(`running ${program} with arguments: ${JSON.stringify(args)}`);
+	const exit = await exec.exec(program, args);
+	if (exit !== 0) throw new Error(`${program} exited with code ${exit}`);
+}
+
