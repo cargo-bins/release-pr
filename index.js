@@ -50,8 +50,31 @@ async function makeBranch(version, { branchPrefix, branchSeparator }) {
 }
 
 async function findCrate({ name, path }) {
-	// figure out which crate we're looking at and ensure both of these are set:
-	return { name, path };
+	if (!name && !path) {
+		// check for a valid crate at the root
+		try {
+			return await pkgid();
+		} catch (err) {
+			core.error(
+				"No crate found at the root, try specifying crate-name or crate-path."
+			);
+			throw err;
+		}
+	} else if (name && !path) {
+		return pkgid(name);
+	} else if (!name && path) {
+		return pkgid(null, path);
+	} else {
+		// check that we can get a valid crate given all the inputs
+		try {
+			return await pkgid(name, path);
+		} catch (err) {
+			core.error(
+				"crate-name and crate-path conflict; prefer only specifying one or fix the mismatch."
+			);
+			throw err;
+		}
+	}
 }
 
 async function runCargoRelease(crate, version, branchName) {
@@ -179,7 +202,37 @@ async function toolExists(name) {
 		core.debug(`program exited with code ${code}`);
 		return code === 0;
 	} catch (err) {
-		core.debug(`program errored: ${err}`)
+		core.debug(`program errored: ${err}`);
 		return false;
 	}
+}
+
+async function execWithOutput(program, args) {
+	core.debug(`running ${program} with arguments: ${JSON.stringify(args)}`);
+	const { exitCode, stdout } = await exec.getExecOutput(program, args);
+	if (exitCode !== 0)
+		throw new Error(`${program} exited with code ${exitCode}`);
+	return stdout;
+}
+
+async function pkgid(name = null, path = null) {
+	core.debug(`checking and parsing pkgid for name=${name} path=${path}`);
+
+	const args = ["pkgid"];
+	if (name) args.push("--package", name);
+	if (path) args.push("--manifest-path", path.join(path, "Cargo.toml"));
+
+	const id = await execWithOutput("cargo", args);
+	core.debug(`got pkgid: ${id}`);
+
+	const { protocol, pathname, hash } = new URL(id);
+	if (protocol !== "file:")
+		throw new Error("pkgid is returning a non-local crate");
+
+	core.debug(`got pathname: ${pathname}`);
+	const crateName = hash.split("#", 2)[1]?.split("@")[0];
+	if (!crateName) throw new Error(`failed to parse crate name from ${hash}`);
+	core.debug(`got crate name: ${crateName}`);
+
+	return { name: crateName, path: pathname };
 }
