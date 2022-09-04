@@ -374,7 +374,7 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails> {
 
 			if (
 				(crate.name && crate.name === parsed.name) ||
-				(crate.path && crate.path === parsed.path)
+				(cratePath && cratePath === parsed.path)
 			)
 				return parsed;
 		}
