@@ -20,7 +20,7 @@ import {Octokit} from '@octokit/core';
 	try {
 		const inputs = await getInputs();
 
-		const hasCrate = !(inputs.crate.name || inputs.crate.path);
+		const hasCrate = !!(inputs.crate.name || inputs.crate.path);
 		const crate = await findCrate(inputs.crate);
 
 		await setGithubUser(inputs.git);
