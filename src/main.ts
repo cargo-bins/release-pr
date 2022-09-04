@@ -24,6 +24,7 @@ import {Octokit} from '@octokit/core';
 		const crate = await findCrate(inputs.crate);
 
 		await setGithubUser(inputs.git);
+		await fetchGitTags();
 
 		const octokit = getOctokit(inputs.githubToken);
 
@@ -79,6 +80,11 @@ async function setGithubUser({
 
 	await execAndSucceed('git', ['config', 'user.name', name]);
 	await execAndSucceed('git', ['config', 'user.email', email]);
+}
+
+async function fetchGitTags(): Promise<void> {
+	info('Pulling git tags so cargo-release can read them');
+	await execAndSucceed('git', ['fetch', '--tags']);
 }
 
 async function getDefaultBranch(octokit: Octokit): Promise<string> {
