@@ -328,19 +328,19 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails> {
 	)?.workspace_members;
 	debug(`got workspace members: ${JSON.stringify(pkgs)}`);
 
-	for (const pkg of pkgs) {
-		const parsed = parseWorkspacePkg(pkg);
-		if (!parsed) continue;
+	// only bother looping if we're searching for something
+	if (crate.name || crate.path) {
+		for (const pkg of pkgs) {
+			const parsed = parseWorkspacePkg(pkg);
+			if (!parsed) continue;
 
-		if (
-			(crate.name && crate.name === parsed.name) ||
-			(crate.path && crate.path === parsed.path)
-		)
-			return parsed;
-	}
-
-	warning('no matching crate found');
-	if (pkgs.length === 1) {
+			if (
+				(crate.name && crate.name === parsed.name) ||
+				(crate.path && crate.path === parsed.path)
+			)
+				return parsed;
+		}
+	} else if (pkgs.length === 1) {
 		info('only one crate in workspace, assuming that is it');
 		const parsed = parseWorkspacePkg(pkgs[0]);
 		if (!parsed) throw new Error('no good crate found');
