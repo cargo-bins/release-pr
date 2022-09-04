@@ -23,6 +23,7 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
         const hasCrate = !!(inputs.crate.name || inputs.crate.path);
         const crate = await findCrate(inputs.crate);
         await setGithubUser(inputs.git);
+        await fetchGitTags();
         const octokit = (0, github_1.getOctokit)(inputs.githubToken);
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
         let branchName = makeBranchName(inputs.version, hasCrate && crate.name, inputs.git);
@@ -49,6 +50,10 @@ async function setGithubUser({ name, email }) {
     (0, core_1.info)(`Setting git user details: ${name} <${email}>`);
     await execAndSucceed('git', ['config', 'user.name', name]);
     await execAndSucceed('git', ['config', 'user.email', email]);
+}
+async function fetchGitTags() {
+    (0, core_1.info)('Pulling git tags so cargo-release can read them');
+    await execAndSucceed('git', ['fetch', '--tags']);
 }
 async function getDefaultBranch(octokit) {
     (0, core_1.debug)("asking github API for repo's default branch");
@@ -220,12 +225,12 @@ async function pkgid(crate = {}) {
     // API is unchanged from original, like if this was pkgid.
     var _a;
     (0, core_1.debug)(`checking and parsing metadata to find name=${crate.name} path=${crate.path}`);
-    const cratePath = crate.path && realpath(crate.path);
-    (0, core_1.debug)(`realpath of crate.path: ${cratePath}`);
     const pkgs = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_members;
     (0, core_1.debug)(`got workspace members: ${JSON.stringify(pkgs)}`);
     // only bother looping if we're searching for something
     if (crate.name || crate.path) {
+        const cratePath = crate.path && realpath(crate.path);
+        (0, core_1.debug)(`realpath of crate.path: ${cratePath}`);
         for (const pkg of pkgs) {
             const parsed = parseWorkspacePkg(pkg);
             if (!parsed)
