@@ -1,5 +1,5 @@
 import {promises as fs} from 'fs';
-import {join} from 'path';
+import {join, normalize} from 'path';
 
 import {
 	setFailed,
@@ -320,35 +320,56 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails> {
 		`checking and parsing metadata to find name=${crate.name} path=${crate.path}`
 	);
 
+	const cratePath = crate.path && normalize(crate.path);
+	debug(`normalize of crate.path: ${cratePath}`);
+
 	const pkgs: WorkspaceMemberString[] = JSON.parse(
 		await execWithOutput('cargo', ['metadata', '--format-version=1'])
 	)?.workspace_members;
 	debug(`got workspace members: ${JSON.stringify(pkgs)}`);
 
 	for (const pkg of pkgs) {
-		debug(`parsing workspace package: "${pkg}"`);
-		const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+\))$/);
-		if (!split) {
-			warning(`could not parse package format: "${pkg}", skipping`);
-			continue;
-		}
-
-		const [, name, version, url] = split;
-
-		const {protocol, pathname} = new URL(url);
-		if (protocol !== 'file:')
-			throw new Error('pkgid is returning a non-local crate');
-
-		debug(`got pathname: ${pathname}`);
-		debug(`got crate name: ${name}`);
-		debug(`got crate version: ${version}`);
+		const parsed = parseWorkspacePkg(pkg);
+		if (!parsed) continue;
 
 		if (
-			(crate.name && crate.name === name) ||
-			(crate.path && crate.path === pathname)
+			(crate.name && crate.name === parsed.name) ||
+			(crate.path && crate.path === parsed.path)
 		)
-			return {name, path: pathname, version};
+			return parsed;
+	}
+
+	warning('no matching crate found');
+	if (pkgs.length === 1) {
+		info('only one crate in workspace, assuming that is it');
+		const parsed = parseWorkspacePkg(pkgs[0]);
+		if (!parsed) throw new Error('no good crate found');
+		return parsed;
 	}
 
 	throw new Error('no matching crate found');
+}
+
+function parseWorkspacePkg(pkg: string): CrateDetails | null {
+	debug(`parsing workspace package: "${pkg}"`);
+	const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+\))$/);
+	if (!split) {
+		warning(`could not parse package format: "${pkg}", skipping`);
+		return null;
+	}
+
+	const [, name, version, url] = split;
+
+	const {protocol, pathname} = new URL(url);
+	if (protocol !== 'file:')
+		throw new Error('pkgid is returning a non-local crate');
+
+	debug(`got pathname: ${pathname}`);
+	const path = normalize(pathname);
+	debug(`got normalize: ${path}`);
+
+	debug(`got crate name: ${name}`);
+	debug(`got crate version: ${version}`);
+
+	return {name, path, version};
 }
