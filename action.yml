@@ -1,5 +1,7 @@
 name: Cargo Release PR
 description: Create a PR for a release of a Rust/Cargo crate, using cargo-release
+icon: package
+color: orange
 inputs:
   github-token:
     description: GitHub token to interact with the API
