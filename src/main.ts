@@ -242,8 +242,19 @@ async function makePR(
 		draft: pr.draft
 	});
 
-	info(`PR opened: ${url}`);
-	setOutput('pr-url', url);
+	debug(`API URL for PR: ${url}`);
+
+	// from: https://api.github.com/repos/passcod/cargo-release-pr-test/pulls/1
+	// to:   https://github.com/passcod/cargo-release-pr-test/pulls/1
+
+	const publicUrl = new URL(url);
+	publicUrl.hostname = publicUrl.hostname.replace(/^api[.]/, '');
+	publicUrl.pathname = publicUrl.pathname
+		.replace(/^[/]repos[/]/, '/')
+		.replace(/[/]pulls[/](\d+)$/, '/pull/$1');
+
+	info(`PR opened: ${publicUrl}`);
+	setOutput('pr-url', publicUrl.toString());
 }
 
 interface TemplateVars {
