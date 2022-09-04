@@ -20,7 +20,7 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
 (async () => {
     try {
         const inputs = await (0, schema_1.default)();
-        const hasCrate = !(inputs.crate.name || inputs.crate.path);
+        const hasCrate = !!(inputs.crate.name || inputs.crate.path);
         const crate = await findCrate(inputs.crate);
         await setGithubUser(inputs.git);
         const octokit = (0, github_1.getOctokit)(inputs.githubToken);
