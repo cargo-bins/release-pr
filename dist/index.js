@@ -20,14 +20,17 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
 (async () => {
     try {
         const inputs = await (0, schema_1.default)();
+        const hasCrate = !(inputs.crate.name || inputs.crate.path);
+        const crate = await findCrate(inputs.crate);
         await setGithubUser(inputs.git);
         const octokit = (0, github_1.getOctokit)(inputs.githubToken);
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
-        let branchName = await makeBranch(inputs.version, inputs.git);
-        const crate = await findCrate(inputs.crate);
+        let branchName = makeBranchName(inputs.version, hasCrate && crate.name, inputs.git);
+        await makeBranch(branchName);
         const newVersion = await runCargoRelease(crate, inputs.version, branchName);
         if (inputs.version !== newVersion) {
-            branchName = await renameBranch(newVersion, inputs.git);
+            branchName = branchName = makeBranchName(newVersion, hasCrate && crate.name, inputs.git);
+            await renameBranch(branchName);
         }
         (0, core_1.setOutput)('pr-branch', branchName);
         await pushBranch(branchName);
@@ -52,17 +55,16 @@ async function getDefaultBranch(octokit) {
     const { data: { default_branch } } = await octokit.request('GET /repos/{owner}/{repo}', github_1.context.repo);
     return default_branch;
 }
-async function makeBranch(version, { branchPrefix, branchSeparator }) {
-    const branchName = [branchPrefix, version].join(branchSeparator);
+function makeBranchName(version, crate, { branchPrefix, branchSeparator }) {
+    return [branchPrefix, crate, version].filter(_ => _).join(branchSeparator);
+}
+async function makeBranch(branchName) {
     (0, core_1.info)(`Creating branch ${branchName}`);
     await execAndSucceed('git', ['switch', '-c', branchName]);
-    return branchName;
 }
-async function renameBranch(version, { branchPrefix, branchSeparator }) {
-    const branchName = [branchPrefix, version].join(branchSeparator);
+async function renameBranch(branchName) {
     (0, core_1.info)(`Renaming branch to ${branchName}`);
     await execAndSucceed('git', ['branch', '-M', branchName]);
-    return branchName;
 }
 async function findCrate({ name, path }) {
     if (!name && !path) {
