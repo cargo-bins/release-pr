@@ -160,8 +160,16 @@ async function makePR(octokit, inputs, crate, baseBranch, branchName, newVersion
     (0, core_1.debug)('making request to github to create PR');
     const { data: { url } } = await octokit.request('POST /repos/{owner}/{repo}/pulls', Object.assign(Object.assign({}, github_1.context.repo), { title,
         body, head: branchName, base: baseBranch, maintainer_can_modify: pr.modifiable, draft: pr.draft }));
-    (0, core_1.info)(`PR opened: ${url}`);
-    (0, core_1.setOutput)('pr-url', url);
+    (0, core_1.debug)(`API URL for PR: ${url}`);
+    // from: https://api.github.com/repos/passcod/cargo-release-pr-test/pulls/1
+    // to:   https://github.com/passcod/cargo-release-pr-test/pulls/1
+    const publicUrl = new URL(url);
+    publicUrl.hostname = publicUrl.hostname.replace(/^api[.]/, '');
+    publicUrl.pathname = publicUrl.pathname
+        .replace(/^[/]repos[/]/, '/')
+        .replace(/[/]pulls[/](\d+)$/, '/pull/$1');
+    (0, core_1.info)(`PR opened: ${publicUrl}`);
+    (0, core_1.setOutput)('pr-url', publicUrl.toString());
 }
 function render(template, vars) {
     return (0, ejs_1.render)(template, vars);
