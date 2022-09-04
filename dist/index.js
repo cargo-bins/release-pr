@@ -174,8 +174,8 @@ async function execAndSucceed(program, args, options = {}) {
 }
 async function toolExists(name) {
     try {
-        (0, core_1.debug)(`running "${name} --version"`);
-        const code = await (0, exec_1.exec)(name, ['--version']);
+        (0, core_1.debug)(`running "${name} --help"`);
+        const code = await (0, exec_1.exec)(name, ['--help']);
         (0, core_1.debug)(`program exited with code ${code}`);
         return code === 0;
     }
@@ -191,26 +191,33 @@ async function execWithOutput(program, args) {
         throw new Error(`${program} exited with code ${exitCode}`);
     return stdout;
 }
-async function pkgid({ name, path } = {}) {
-    var _a, _b;
-    (0, core_1.debug)(`checking and parsing pkgid for name=${name} path=${path}`);
-    const args = ['pkgid'];
-    if (name)
-        args.push('--package', name);
-    if (path)
-        args.push('--manifest-path', (0, path_1.join)(path, 'Cargo.toml'));
-    const id = await execWithOutput('cargo', args);
-    (0, core_1.debug)(`got pkgid: ${id}`);
-    const { protocol, pathname, hash } = new URL(id);
-    if (protocol !== 'file:')
-        throw new Error('pkgid is returning a non-local crate');
-    const [crateName, version] = (_b = (_a = hash.split('#', 2)[1]) === null || _a === void 0 ? void 0 : _a.split('@', 2)) !== null && _b !== void 0 ? _b : [];
-    if (!crateName)
-        throw new Error(`failed to parse crate name from ${hash}`);
-    (0, core_1.debug)(`got pathname: ${pathname}`);
-    (0, core_1.debug)(`got crate name: ${crateName}`);
-    (0, core_1.debug)(`got crate version: ${version}`);
-    return { name: crateName, path: pathname, version };
+async function pkgid(crate = {}) {
+    // we actually use cargo-metadata so it works without a Cargo.lock
+    // and equally well for single crates and workspace crates, but the
+    // API is unchanged from original, like if this was pkgid.
+    var _a;
+    (0, core_1.debug)(`checking and parsing metadata to find name=${crate.name} path=${crate.path}`);
+    const pkgs = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_members;
+    (0, core_1.debug)(`got workspace members: ${JSON.stringify(pkgs)}`);
+    for (const pkg of pkgs) {
+        (0, core_1.debug)(`parsing workspace package: "${pkg}"`);
+        const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+\))$/);
+        if (!split) {
+            (0, core_1.warning)(`could not parse package format: "${pkg}", skipping`);
+            continue;
+        }
+        const [, name, version, url] = split;
+        const { protocol, pathname } = new URL(url);
+        if (protocol !== 'file:')
+            throw new Error('pkgid is returning a non-local crate');
+        (0, core_1.debug)(`got pathname: ${pathname}`);
+        (0, core_1.debug)(`got crate name: ${name}`);
+        (0, core_1.debug)(`got crate version: ${version}`);
+        if ((crate.name && crate.name === name) ||
+            (crate.path && crate.path === pathname))
+            return { name, path: pathname, version };
+    }
+    throw new Error('no matching crate found');
 }
 
 
