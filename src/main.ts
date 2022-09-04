@@ -19,15 +19,23 @@ import {Octokit} from '@octokit/core';
 (async () => {
 	try {
 		const inputs = await getInputs();
+
+		const hasCrate = !(inputs.crate.name || inputs.crate.path);
+		const crate = await findCrate(inputs.crate);
+
 		await setGithubUser(inputs.git);
 
 		const octokit = getOctokit(inputs.githubToken);
 
 		const baseBranch =
 			inputs.baseBranch || (await getDefaultBranch(octokit));
-		let branchName = await makeBranch(inputs.version, inputs.git);
+		let branchName = makeBranchName(
+			inputs.version,
+			hasCrate && crate.name,
+			inputs.git
+		);
+		await makeBranch(branchName);
 
-		const crate = await findCrate(inputs.crate);
 		const newVersion = await runCargoRelease(
 			crate,
 			inputs.version,
@@ -35,7 +43,12 @@ import {Octokit} from '@octokit/core';
 		);
 
 		if (inputs.version !== newVersion) {
-			branchName = await renameBranch(newVersion, inputs.git);
+			branchName = branchName = makeBranchName(
+				newVersion,
+				hasCrate && crate.name,
+				inputs.git
+			);
+			await renameBranch(branchName);
 		}
 
 		setOutput('pr-branch', branchName);
@@ -76,32 +89,23 @@ async function getDefaultBranch(octokit: Octokit): Promise<string> {
 	return default_branch;
 }
 
-async function makeBranch(
+type BranchOpts = {branchPrefix: string; branchSeparator: string};
+function makeBranchName(
 	version: string,
-	{
-		branchPrefix,
-		branchSeparator
-	}: {branchPrefix: string; branchSeparator: string}
-): Promise<string> {
-	const branchName = [branchPrefix, version].join(branchSeparator);
-	info(`Creating branch ${branchName}`);
-
-	await execAndSucceed('git', ['switch', '-c', branchName]);
-	return branchName;
+	crate: false | string,
+	{branchPrefix, branchSeparator}: BranchOpts
+): string {
+	return [branchPrefix, crate, version].filter(_ => _).join(branchSeparator);
 }
 
-async function renameBranch(
-	version: string,
-	{
-		branchPrefix,
-		branchSeparator
-	}: {branchPrefix: string; branchSeparator: string}
-): Promise<string> {
-	const branchName = [branchPrefix, version].join(branchSeparator);
-	info(`Renaming branch to ${branchName}`);
+async function makeBranch(branchName: string): Promise<void> {
+	info(`Creating branch ${branchName}`);
+	await execAndSucceed('git', ['switch', '-c', branchName]);
+}
 
+async function renameBranch(branchName: string): Promise<void> {
+	info(`Renaming branch to ${branchName}`);
 	await execAndSucceed('git', ['branch', '-M', branchName]);
-	return branchName;
 }
 
 interface CrateArgs {
