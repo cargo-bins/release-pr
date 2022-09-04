@@ -23,6 +23,7 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
         const hasCrate = !!(inputs.crate.name || inputs.crate.path);
         const crate = await findCrate(inputs.crate);
         await setGithubUser(inputs.git);
+        await unshallowGit();
         await fetchGitTags();
         const octokit = (0, github_1.getOctokit)(inputs.githubToken);
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
@@ -50,6 +51,10 @@ async function setGithubUser({ name, email }) {
     (0, core_1.info)(`Setting git user details: ${name} <${email}>`);
     await execAndSucceed('git', ['config', 'user.name', name]);
     await execAndSucceed('git', ['config', 'user.email', email]);
+}
+async function unshallowGit() {
+    (0, core_1.info)('Fetching all history so cargo-release can read it');
+    await execAndSucceed('git', ['fetch', '--unshallow']);
 }
 async function fetchGitTags() {
     (0, core_1.info)('Pulling git tags so cargo-release can read them');
