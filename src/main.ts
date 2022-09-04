@@ -1,5 +1,5 @@
 import {promises as fs} from 'fs';
-import {join, normalize} from 'path';
+import {join, normalize, resolve} from 'path';
 
 import {
 	setFailed,
@@ -342,6 +342,11 @@ async function execWithOutput(
 	return stdout;
 }
 
+function realpath(path: string): string {
+	const workdir = process.cwd();
+	return resolve(workdir, normalize(path));
+}
+
 type WorkspaceMemberString = `${string} ${string} (${string})`;
 
 async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails> {
@@ -353,8 +358,8 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails> {
 		`checking and parsing metadata to find name=${crate.name} path=${crate.path}`
 	);
 
-	const cratePath = crate.path && normalize(crate.path);
-	debug(`normalize of crate.path: ${cratePath}`);
+	const cratePath = crate.path && realpath(crate.path);
+	debug(`realpath of crate.path: ${cratePath}`);
 
 	const pkgs: WorkspaceMemberString[] = JSON.parse(
 		await execWithOutput('cargo', ['metadata', '--format-version=1'])
@@ -398,8 +403,8 @@ function parseWorkspacePkg(pkg: string): CrateDetails | null {
 		throw new Error('pkgid is returning a non-local crate');
 
 	debug(`got pathname: ${pathname}`);
-	const path = normalize(pathname);
-	debug(`got normalize: ${path}`);
+	const path = realpath(pathname);
+	debug(`got realpath: ${path}`);
 
 	debug(`got crate name: ${name}`);
 	debug(`got crate version: ${version}`);
