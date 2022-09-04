@@ -309,26 +309,46 @@ async function execWithOutput(
 	return stdout;
 }
 
-async function pkgid({name, path}: CrateArgs = {}): Promise<CrateDetails> {
-	debug(`checking and parsing pkgid for name=${name} path=${path}`);
+type WorkspaceMemberString = `${string} ${string} (${string})`;
 
-	const args = ['pkgid'];
-	if (name) args.push('--package', name);
-	if (path) args.push('--manifest-path', join(path, 'Cargo.toml'));
+async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails> {
+	// we actually use cargo-metadata so it works without a Cargo.lock
+	// and equally well for single crates and workspace crates, but the
+	// API is unchanged from original, like if this was pkgid.
 
-	const id = await execWithOutput('cargo', args);
-	debug(`got pkgid: ${id}`);
+	debug(
+		`checking and parsing metadata to find name=${crate.name} path=${crate.path}`
+	);
 
-	const {protocol, pathname, hash} = new URL(id);
-	if (protocol !== 'file:')
-		throw new Error('pkgid is returning a non-local crate');
+	const pkgs: WorkspaceMemberString[] = JSON.parse(
+		await execWithOutput('cargo', ['metadata', '--format-version=1'])
+	)?.workspace_members;
+	debug(`got workspace members: ${JSON.stringify(pkgs)}`);
 
-	const [crateName, version] = hash.split('#', 2)[1]?.split('@', 2) ?? [];
-	if (!crateName) throw new Error(`failed to parse crate name from ${hash}`);
+	for (const pkg of pkgs) {
+		debug(`parsing workspace package: "${pkg}"`);
+		const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+\))$/);
+		if (!split) {
+			warning(`could not parse package format: "${pkg}", skipping`);
+			continue;
+		}
 
-	debug(`got pathname: ${pathname}`);
-	debug(`got crate name: ${crateName}`);
-	debug(`got crate version: ${version}`);
+		const [, name, version, url] = split;
 
-	return {name: crateName, path: pathname, version};
+		const {protocol, pathname} = new URL(url);
+		if (protocol !== 'file:')
+			throw new Error('pkgid is returning a non-local crate');
+
+		debug(`got pathname: ${pathname}`);
+		debug(`got crate name: ${name}`);
+		debug(`got crate version: ${version}`);
+
+		if (
+			(crate.name && crate.name === name) ||
+			(crate.path && crate.path === pathname)
+		)
+			return {name, path: pathname, version};
+	}
+
+	throw new Error('no matching crate found');
 }
