@@ -223,7 +223,7 @@ async function pkgid(crate = {}) {
 }
 function parseWorkspacePkg(pkg) {
     (0, core_1.debug)(`parsing workspace package: "${pkg}"`);
-    const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+\))$/);
+    const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+)\)$/);
     if (!split) {
         (0, core_1.warning)(`could not parse package format: "${pkg}", skipping`);
         return null;
