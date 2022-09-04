@@ -197,27 +197,45 @@ async function pkgid(crate = {}) {
     // API is unchanged from original, like if this was pkgid.
     var _a;
     (0, core_1.debug)(`checking and parsing metadata to find name=${crate.name} path=${crate.path}`);
+    const cratePath = crate.path && (0, path_1.normalize)(crate.path);
+    (0, core_1.debug)(`normalize of crate.path: ${cratePath}`);
     const pkgs = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_members;
     (0, core_1.debug)(`got workspace members: ${JSON.stringify(pkgs)}`);
     for (const pkg of pkgs) {
-        (0, core_1.debug)(`parsing workspace package: "${pkg}"`);
-        const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+\))$/);
-        if (!split) {
-            (0, core_1.warning)(`could not parse package format: "${pkg}", skipping`);
+        const parsed = parseWorkspacePkg(pkg);
+        if (!parsed)
             continue;
-        }
-        const [, name, version, url] = split;
-        const { protocol, pathname } = new URL(url);
-        if (protocol !== 'file:')
-            throw new Error('pkgid is returning a non-local crate');
-        (0, core_1.debug)(`got pathname: ${pathname}`);
-        (0, core_1.debug)(`got crate name: ${name}`);
-        (0, core_1.debug)(`got crate version: ${version}`);
-        if ((crate.name && crate.name === name) ||
-            (crate.path && crate.path === pathname))
-            return { name, path: pathname, version };
+        if ((crate.name && crate.name === parsed.name) ||
+            (crate.path && crate.path === parsed.path))
+            return parsed;
+    }
+    (0, core_1.warning)('no matching crate found');
+    if (pkgs.length === 1) {
+        (0, core_1.info)('only one crate in workspace, assuming that is it');
+        const parsed = parseWorkspacePkg(pkgs[0]);
+        if (!parsed)
+            throw new Error('no good crate found');
+        return parsed;
     }
     throw new Error('no matching crate found');
+}
+function parseWorkspacePkg(pkg) {
+    (0, core_1.debug)(`parsing workspace package: "${pkg}"`);
+    const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+\))$/);
+    if (!split) {
+        (0, core_1.warning)(`could not parse package format: "${pkg}", skipping`);
+        return null;
+    }
+    const [, name, version, url] = split;
+    const { protocol, pathname } = new URL(url);
+    if (protocol !== 'file:')
+        throw new Error('pkgid is returning a non-local crate');
+    (0, core_1.debug)(`got pathname: ${pathname}`);
+    const path = (0, path_1.normalize)(pathname);
+    (0, core_1.debug)(`got normalize: ${path}`);
+    (0, core_1.debug)(`got crate name: ${name}`);
+    (0, core_1.debug)(`got crate version: ${version}`);
+    return { name, path, version };
 }
 
 
