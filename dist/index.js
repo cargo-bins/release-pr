@@ -210,14 +210,18 @@ async function execWithOutput(program, args) {
         throw new Error(`${program} exited with code ${exitCode}`);
     return stdout;
 }
+function realpath(path) {
+    const workdir = process.cwd();
+    return (0, path_1.resolve)(workdir, (0, path_1.normalize)(path));
+}
 async function pkgid(crate = {}) {
     // we actually use cargo-metadata so it works without a Cargo.lock
     // and equally well for single crates and workspace crates, but the
     // API is unchanged from original, like if this was pkgid.
     var _a;
     (0, core_1.debug)(`checking and parsing metadata to find name=${crate.name} path=${crate.path}`);
-    const cratePath = crate.path && (0, path_1.normalize)(crate.path);
-    (0, core_1.debug)(`normalize of crate.path: ${cratePath}`);
+    const cratePath = crate.path && realpath(crate.path);
+    (0, core_1.debug)(`realpath of crate.path: ${cratePath}`);
     const pkgs = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_members;
     (0, core_1.debug)(`got workspace members: ${JSON.stringify(pkgs)}`);
     // only bother looping if we're searching for something
@@ -252,8 +256,8 @@ function parseWorkspacePkg(pkg) {
     if (protocol !== 'file:')
         throw new Error('pkgid is returning a non-local crate');
     (0, core_1.debug)(`got pathname: ${pathname}`);
-    const path = (0, path_1.normalize)(pathname);
-    (0, core_1.debug)(`got normalize: ${path}`);
+    const path = realpath(pathname);
+    (0, core_1.debug)(`got realpath: ${path}`);
     (0, core_1.debug)(`got crate name: ${name}`);
     (0, core_1.debug)(`got crate version: ${version}`);
     return { name, path, version };
