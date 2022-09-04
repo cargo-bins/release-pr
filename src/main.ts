@@ -25,7 +25,7 @@ import {Octokit} from '@octokit/core';
 
 		const baseBranch =
 			inputs.baseBranch || (await getDefaultBranch(octokit));
-		const branchName = await makeBranch(inputs.version, inputs.git);
+		let branchName = await makeBranch(inputs.version, inputs.git);
 
 		const crate = await findCrate(inputs.crate);
 		const newVersion = await runCargoRelease(
@@ -34,6 +34,11 @@ import {Octokit} from '@octokit/core';
 			branchName
 		);
 
+		if (inputs.version !== newVersion) {
+			branchName = await renameBranch(newVersion, inputs.git);
+		}
+
+		setOutput('pr-branch', branchName);
 		await pushBranch(branchName);
 		await makePR(
 			octokit,
@@ -82,7 +87,20 @@ async function makeBranch(
 	info(`Creating branch ${branchName}`);
 
 	await execAndSucceed('git', ['switch', '-c', branchName]);
-	setOutput('pr-branch', branchName);
+	return branchName;
+}
+
+async function renameBranch(
+	version: string,
+	{
+		branchPrefix,
+		branchSeparator
+	}: {branchPrefix: string; branchSeparator: string}
+): Promise<string> {
+	const branchName = [branchPrefix, version].join(branchSeparator);
+	info(`Renaming branch to ${branchName}`);
+
+	await execAndSucceed('git', ['branch', '-M', branchName]);
 	return branchName;
 }
 
