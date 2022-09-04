@@ -201,16 +201,18 @@ async function pkgid(crate = {}) {
     (0, core_1.debug)(`normalize of crate.path: ${cratePath}`);
     const pkgs = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_members;
     (0, core_1.debug)(`got workspace members: ${JSON.stringify(pkgs)}`);
-    for (const pkg of pkgs) {
-        const parsed = parseWorkspacePkg(pkg);
-        if (!parsed)
-            continue;
-        if ((crate.name && crate.name === parsed.name) ||
-            (crate.path && crate.path === parsed.path))
-            return parsed;
+    // only bother looping if we're searching for something
+    if (crate.name || crate.path) {
+        for (const pkg of pkgs) {
+            const parsed = parseWorkspacePkg(pkg);
+            if (!parsed)
+                continue;
+            if ((crate.name && crate.name === parsed.name) ||
+                (crate.path && crate.path === parsed.path))
+                return parsed;
+        }
     }
-    (0, core_1.warning)('no matching crate found');
-    if (pkgs.length === 1) {
+    else if (pkgs.length === 1) {
         (0, core_1.info)('only one crate in workspace, assuming that is it');
         const parsed = parseWorkspacePkg(pkgs[0]);
         if (!parsed)
