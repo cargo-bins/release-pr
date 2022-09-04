@@ -231,7 +231,7 @@ async function pkgid(crate = {}) {
             if (!parsed)
                 continue;
             if ((crate.name && crate.name === parsed.name) ||
-                (crate.path && crate.path === parsed.path))
+                (cratePath && cratePath === parsed.path))
                 return parsed;
         }
     }

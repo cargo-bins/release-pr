@@ -358,9 +358,6 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails> {
 		`checking and parsing metadata to find name=${crate.name} path=${crate.path}`
 	);
 
-	const cratePath = crate.path && realpath(crate.path);
-	debug(`realpath of crate.path: ${cratePath}`);
-
 	const pkgs: WorkspaceMemberString[] = JSON.parse(
 		await execWithOutput('cargo', ['metadata', '--format-version=1'])
 	)?.workspace_members;
@@ -368,6 +365,9 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails> {
 
 	// only bother looping if we're searching for something
 	if (crate.name || crate.path) {
+		const cratePath = crate.path && realpath(crate.path);
+		debug(`realpath of crate.path: ${cratePath}`);
+
 		for (const pkg of pkgs) {
 			const parsed = parseWorkspacePkg(pkg);
 			if (!parsed) continue;
