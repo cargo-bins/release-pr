@@ -18,6 +18,8 @@ staging ground for drafting release notes, and serves as a kind of pre-release a
 The body and title of the PR can be customised via inputs, or completely overriden using custom
 templates.
 
+See the various PRs in the test repo for examples: https://github.com/passcod/cargo-release-pr-test/pulls?q=is%3Apr
+
 ## Usage
 
 With a single crate (no workspace):
