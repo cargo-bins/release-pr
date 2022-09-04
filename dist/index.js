@@ -23,9 +23,13 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
         await setGithubUser(inputs.git);
         const octokit = (0, github_1.getOctokit)(inputs.githubToken);
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
-        const branchName = await makeBranch(inputs.version, inputs.git);
+        let branchName = await makeBranch(inputs.version, inputs.git);
         const crate = await findCrate(inputs.crate);
         const newVersion = await runCargoRelease(crate, inputs.version, branchName);
+        if (inputs.version !== newVersion) {
+            branchName = await renameBranch(newVersion, inputs.git);
+        }
+        (0, core_1.setOutput)('pr-branch', branchName);
         await pushBranch(branchName);
         await makePR(octokit, inputs, crate, baseBranch, branchName, newVersion);
     }
@@ -52,7 +56,12 @@ async function makeBranch(version, { branchPrefix, branchSeparator }) {
     const branchName = [branchPrefix, version].join(branchSeparator);
     (0, core_1.info)(`Creating branch ${branchName}`);
     await execAndSucceed('git', ['switch', '-c', branchName]);
-    (0, core_1.setOutput)('pr-branch', branchName);
+    return branchName;
+}
+async function renameBranch(version, { branchPrefix, branchSeparator }) {
+    const branchName = [branchPrefix, version].join(branchSeparator);
+    (0, core_1.info)(`Renaming branch to ${branchName}`);
+    await execAndSucceed('git', ['branch', '-M', branchName]);
     return branchName;
 }
 async function findCrate({ name, path }) {
