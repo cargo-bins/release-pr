@@ -109,6 +109,7 @@ The action runs `cargo-release` with these CLI options:
 - `--no-push`, `--no-tag` (only commit)
 - `--no-publish` (no publishing to crates.io yet)
 - `--allow-branch release/1.2.3` (so that `cargo-release` doesn't refuse to work)
+- with working directory set to the root of the crate being released
 
 Otherwise, `cargo-release` will behave as normal. Notably, it will read `release.toml` files where
 present, which can provide further configuration. There are two additional restrictions:
