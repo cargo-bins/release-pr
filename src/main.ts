@@ -288,8 +288,8 @@ async function execAndSucceed(
 
 async function toolExists(name: string): Promise<boolean> {
 	try {
-		debug(`running "${name} --version"`);
-		const code = await _exec(name, ['--version']);
+		debug(`running "${name} --help"`);
+		const code = await _exec(name, ['--help']);
 		debug(`program exited with code ${code}`);
 		return code === 0;
 	} catch (err) {
