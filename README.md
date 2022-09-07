@@ -38,6 +38,7 @@ jobs:
   make-release-pr:
     runs-on: ubuntu-latest
     steps:
+      - uses: chainguard-dev/actions/setup-gitsign@main
       - name: Install cargo-release
         uses: taiki-e/install-action@v1
         with:
@@ -79,6 +80,7 @@ jobs:
   make-release-pr:
     runs-on: ubuntu-latest
     steps:
+      - uses: chainguard-dev/actions/setup-gitsign@main
       - name: Install cargo-release
         uses: taiki-e/install-action@v1
         with:
@@ -185,11 +187,10 @@ The action sets the following:
 - `pr-url` (String) The URL to the newly-created PR
 - `version` (String) The version of the crate after release
 
-## Pairs with
+## Pairs well with
 
-This action pairs with two other actions:
+- [`taiki-e/install-action`](https://github.com/marketplace/actions/install-development-tools)
+  install tooling (such as `cargo-release`) from binaries
 
-- [`cargo-bins/pr-release-notes`](https://github.com/cargo-bins/pr-release-notes):
-  extract release notes from a PR, such as the one created by this action
-- [`cargo-bins/tag-on-merge`](https://github.com/cargo-bins/tag-on-merge):
-  publish a tag when a commit with a particular message is merged
+- [`chainguard-dev/actions/setup-gitsign`](https://github.com/chainguard-dev/actions/tree/main/setup-gitsign)
+  enable commit signatures in actions with [gitsign](https://github.com/sigstore/gitsign)
