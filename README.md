@@ -36,17 +36,18 @@ on:
 
 jobs:
   make-release-pr:
+    permissions:
+      id-token: write # Enable OIDC
+      pull-requests: write
+      contents: write
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: chainguard-dev/actions/setup-gitsign@main
       - name: Install cargo-release
         uses: taiki-e/install-action@v1
         with:
           tool: cargo-release
-
-      - uses: actions/checkout@v3
-        with:
-          ref: main
 
       - uses: cargo-bins/release-pr@v1
         with:
@@ -78,17 +79,18 @@ on:
 
 jobs:
   make-release-pr:
+    permissions:
+      id-token: write # Enable OIDC
+      pull-requests: write
+      contents: write
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: chainguard-dev/actions/setup-gitsign@main
       - name: Install cargo-release
         uses: taiki-e/install-action@v1
         with:
           tool: cargo-release
-
-      - uses: actions/checkout@v3
-        with:
-          ref: main
 
       - uses: cargo-bins/release-pr@v1
         with:
