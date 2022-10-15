@@ -113,7 +113,7 @@ async function runCargoRelease(crate, version, branchName) {
         (0, core_1.warning)('cargo-release is not available, attempting to install it');
         if (await toolExists('cargo-binstall')) {
             (0, core_1.info)('trying to install cargo-release with cargo-binstall');
-            await execAndSucceed('cargo', ['binstall', 'cargo-release']);
+            await execAndSucceed('cargo', ['binstall', '--no-confirm', 'cargo-release']);
         }
         else {
             (0, core_1.info)('trying to install cargo-release with cargo-install');
@@ -149,7 +149,7 @@ async function runSemverChecks(crate) {
         (0, core_1.warning)('cargo-semver-checks is not available, attempting to install it');
         if (await toolExists('cargo-binstall')) {
             (0, core_1.info)('trying to install cargo-semver-checks with cargo-binstall');
-            await execAndSucceed('cargo', ['binstall', 'cargo-semver-checks']);
+            await execAndSucceed('cargo', ['binstall', '--no-confirm', 'cargo-semver-checks']);
         }
         else {
             (0, core_1.info)('trying to install cargo-semver-checks with cargo-install');

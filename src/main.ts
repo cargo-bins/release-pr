@@ -174,7 +174,11 @@ async function runCargoRelease(
 
 		if (await toolExists('cargo-binstall')) {
 			info('trying to install cargo-release with cargo-binstall');
-			await execAndSucceed('cargo', ['binstall', '--no-confirm', 'cargo-release']);
+			await execAndSucceed('cargo', [
+				'binstall',
+				'--no-confirm',
+				'cargo-release'
+			]);
 		} else {
 			info('trying to install cargo-release with cargo-install');
 			await execAndSucceed('cargo', ['install', 'cargo-release']);
@@ -221,7 +225,11 @@ async function runSemverChecks(crate: CrateDetails): Promise<void> {
 
 		if (await toolExists('cargo-binstall')) {
 			info('trying to install cargo-semver-checks with cargo-binstall');
-			await execAndSucceed('cargo', ['binstall', '--no-confirm', 'cargo-semver-checks']);
+			await execAndSucceed('cargo', [
+				'binstall',
+				'--no-confirm',
+				'cargo-semver-checks'
+			]);
 		} else {
 			info('trying to install cargo-semver-checks with cargo-install');
 			await execAndSucceed('cargo', ['install', 'cargo-semver-checks']);
