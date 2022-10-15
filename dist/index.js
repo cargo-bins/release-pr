@@ -170,7 +170,7 @@ async function runSemverChecks(crate) {
         'check-release',
         '--package',
         crate.name,
-        '--verbose',
+        '--verbose'
     ], { cwd: crate.path });
 }
 async function pushBranch(branchName) {
