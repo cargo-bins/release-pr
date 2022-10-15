@@ -30,6 +30,9 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
         let branchName = makeBranchName(inputs.version, hasCrate && crate.name, inputs.git);
         await makeBranch(branchName);
         const newVersion = await runCargoRelease(crate, inputs.version, branchName);
+        if (inputs.checkSemver) {
+            await runSemverChecks(crate);
+        }
         if (inputs.version !== newVersion) {
             branchName = branchName = makeBranchName(newVersion, hasCrate && crate.name, inputs.git);
             await renameBranch(branchName);
@@ -126,7 +129,6 @@ async function runCargoRelease(crate, version, branchName) {
         '--no-publish',
         '--no-confirm',
         '--verbose',
-        // "--config", "release.toml", // keep?
         '--allow-branch',
         branchName,
         '--dependent-version',
@@ -140,6 +142,30 @@ async function runCargoRelease(crate, version, branchName) {
         throw new Error('New and old versions are identical, not proceeding');
     (0, core_1.setOutput)('version', newVersion);
     return newVersion;
+}
+async function runSemverChecks(crate) {
+    (0, core_1.debug)('checking for presence of cargo-semver-checks');
+    if (!(await toolExists('cargo-semver-checks'))) {
+        (0, core_1.warning)('cargo-semver-checks is not available, attempting to install it');
+        if (await toolExists('cargo-binstall')) {
+            (0, core_1.info)('trying to install cargo-semver-checks with cargo-binstall');
+            await execAndSucceed('cargo', ['binstall', 'cargo-semver-checks']);
+        }
+        else {
+            (0, core_1.info)('trying to install cargo-semver-checks with cargo-install');
+            await execAndSucceed('cargo', ['install', 'cargo-semver-checks']);
+        }
+    }
+    (0, core_1.debug)('running cargo semver-checks');
+    await execAndSucceed('cargo', [
+        'semver-checks',
+        'check-release',
+        '--package',
+        crate.name,
+        '--verbose',
+        '--baseline-version',
+        crate.version,
+    ], { cwd: crate.path });
 }
 async function pushBranch(branchName) {
     await execAndSucceed('git', ['push', 'origin', branchName]);
@@ -305,6 +331,7 @@ const SCHEMA = (0, yup_1.object)({
     })
         .noUnknown()
         .required(),
+    checkSemver: (0, yup_1.bool)().default(false),
     pr: (0, yup_1.object)({
         title: (0, yup_1.string)().required(),
         label: (0, yup_1.string)().optional(),
@@ -339,6 +366,7 @@ async function getInputs() {
             email: (0, core_1.getInput)('git-user-email'),
             branchPrefix: (0, core_1.getInput)('branch-prefix')
         },
+        checkSemver: (0, core_1.getInput)('check-semver'),
         pr: {
             title: (0, core_1.getInput)('pr-title'),
             label: (0, core_1.getInput)('pr-label'),

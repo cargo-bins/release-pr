@@ -215,7 +215,9 @@ async function runCargoRelease(
 async function runSemverChecks(crate: CrateDetails): Promise<void> {
 	debug('checking for presence of cargo-semver-checks');
 	if (!(await toolExists('cargo-semver-checks'))) {
-		warning('cargo-semver-checks is not available, attempting to install it');
+		warning(
+			'cargo-semver-checks is not available, attempting to install it'
+		);
 
 		if (await toolExists('cargo-binstall')) {
 			info('trying to install cargo-semver-checks with cargo-binstall');
@@ -236,7 +238,7 @@ async function runSemverChecks(crate: CrateDetails): Promise<void> {
 			crate.name,
 			'--verbose',
 			'--baseline-version',
-			crate.version,
+			crate.version
 		],
 		{cwd: crate.path}
 	);
