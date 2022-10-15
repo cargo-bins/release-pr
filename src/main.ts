@@ -245,8 +245,6 @@ async function runSemverChecks(crate: CrateDetails): Promise<void> {
 			'--package',
 			crate.name,
 			'--verbose',
-			'--baseline-version',
-			crate.version
 		],
 		{cwd: crate.path}
 	);
