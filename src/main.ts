@@ -44,6 +44,10 @@ import {Octokit} from '@octokit/core';
 			branchName
 		);
 
+		if (inputs.checkSemver) {
+			await runSemverChecks(crate);
+		}
+
 		if (inputs.version !== newVersion) {
 			branchName = branchName = makeBranchName(
 				newVersion,
@@ -188,7 +192,6 @@ async function runCargoRelease(
 			'--no-publish',
 			'--no-confirm',
 			'--verbose',
-			// "--config", "release.toml", // keep?
 			'--allow-branch',
 			branchName,
 			'--dependent-version',
@@ -207,6 +210,36 @@ async function runCargoRelease(
 
 	setOutput('version', newVersion);
 	return newVersion;
+}
+
+async function runSemverChecks(crate: CrateDetails): Promise<void> {
+	debug('checking for presence of cargo-semver-checks');
+	if (!(await toolExists('cargo-semver-checks'))) {
+		warning('cargo-semver-checks is not available, attempting to install it');
+
+		if (await toolExists('cargo-binstall')) {
+			info('trying to install cargo-semver-checks with cargo-binstall');
+			await execAndSucceed('cargo', ['binstall', 'cargo-semver-checks']);
+		} else {
+			info('trying to install cargo-semver-checks with cargo-install');
+			await execAndSucceed('cargo', ['install', 'cargo-semver-checks']);
+		}
+	}
+
+	debug('running cargo semver-checks');
+	await execAndSucceed(
+		'cargo',
+		[
+			'semver-checks',
+			'check-release',
+			'--package',
+			crate.name,
+			'--verbose',
+			'--baseline-version',
+			crate.version,
+		],
+		{cwd: crate.path}
+	);
 }
 
 async function pushBranch(branchName: string): Promise<void> {

@@ -140,6 +140,7 @@ Doing so will break this action.
 | `pr-template-file` | String | _optional_ | The path to an [EJS] template file for the body of the PR. This is mutually exclusive with `pr-template`. If neither is provided, the [default template] is used. |
 | `pr-merge-strategy` | String | `squash` | The merge strategy that should be used to merge the release PR. Note that this action is not involved in merging the PR; this input is only a hint which is rendered by the (default) template. May be either of: `squash`, `merge`, `rebase`, `bors`. |
 | `pr-release-notes` | Boolean | `false` | Includes a section in the PR body (with the default template) which can be used to fill in release notes. |
+| `check-semver` | Boolean | `false` | Use [`cargo-semver-checks`](https://github.com/obi1kenobi/cargo-semver-check) to check the release before pushing it. |
 | `git-user-name` | String | `github-actions` | The git user name, which will be used for the release commit. |
 | `git-user-email` | String | `github-actions@github.com` | The git user email, which will be used for the release commit. |
 | `base-branch` | String | _(discovered)_ | The branch which the release PR will target. Note that the action does _not_ checkout this branch, so mismatches could cause odd behaviour. Defaults to the repo's configured default branch. |
@@ -196,3 +197,6 @@ The action sets the following:
 
 - [`chainguard-dev/actions/setup-gitsign`](https://github.com/chainguard-dev/actions/tree/main/setup-gitsign)
   enable commit signatures in actions with [gitsign](https://github.com/sigstore/gitsign)
+
+- [`cargo-semver-checks`](https://github.com/obi1kenobi/cargo-semver-check)
+  check semver compatibility before publishing a release

@@ -24,6 +24,7 @@ const SCHEMA = object({
 	})
 		.noUnknown()
 		.required(),
+	checkSemver: bool().default(false),
 	pr: object({
 		title: string().required(),
 		label: string().optional(),
@@ -65,6 +66,7 @@ export default async function getInputs(): Promise<InputsType> {
 			email: getInput('git-user-email'),
 			branchPrefix: getInput('branch-prefix')
 		},
+		checkSemver: getInput('check-semver'),
 		pr: {
 			title: getInput('pr-title'),
 			label: getInput('pr-label'),
