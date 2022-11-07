@@ -41,7 +41,8 @@ import {Octokit} from '@octokit/core';
 		const newVersion = await runCargoRelease(
 			crate,
 			inputs.version,
-			branchName
+			branchName,
+			inputs.options
 		);
 
 		if (inputs.checkSemver) {
@@ -166,7 +167,8 @@ async function findCrate({name, path}: CrateArgs): Promise<CrateDetails> {
 async function runCargoRelease(
 	crate: CrateDetails,
 	version: string,
-	branchName: string
+	branchName: string,
+	options: any
 ): Promise<string> {
 	debug('checking for presence of cargo-release');
 	if (!(await toolExists('cargo-release'))) {
@@ -199,7 +201,7 @@ async function runCargoRelease(
 			'--allow-branch',
 			branchName,
 			'--dependent-version',
-			'upgrade',
+			options.dependentVersion,
 			version
 		],
 		{cwd: crate.path}

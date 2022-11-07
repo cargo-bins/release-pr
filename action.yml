@@ -64,6 +64,10 @@ inputs:
     description: Prefix of the release branch created for the PR
     required: true
     default: release
+  options-dependent-version:
+    description: `--dependent-version` option for cargo release (`upgrade`, `fix`)
+    required: false
+    default: upgrade
 outputs:
   pr-branch:
     description: Branch name of the release PR
