@@ -48,7 +48,7 @@ const SCHEMA = object({
 		releaseNotes: bool().default(false)
 	}),
 	options: object({
-		dependentVersion: string().default('upgrade').oneOf(['upgrade', 'fix'])
+		dependentVersion: string().oneOf(['upgrade', 'fix']).default('upgrade')
 	})
 		.noUnknown()
 		.required()

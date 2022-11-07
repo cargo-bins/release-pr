@@ -110,7 +110,7 @@ it will instead attempt to use that to install `cargo-release`.
 The action runs `cargo-release` with these CLI options:
 
 - `--verbose`
-- `--dependent-version upgrade` by default, use `options-dependent-version` to override)
+- `--dependent-version upgrade` by default, use `options-dependent-version` to override
 - `--execute`, `--no-confirm` (no dry run)
 - `--no-push`, `--no-tag` (only commit)
 - `--no-publish` (no publishing to crates.io yet)
