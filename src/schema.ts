@@ -46,7 +46,9 @@ const SCHEMA = object({
 			.oneOf(['squash', 'merge', 'rebase', 'bors'])
 			.default('squash'),
 		releaseNotes: bool().default(false)
-	}),
+	})
+		.noUnknown()
+		.required(),
 	options: object({
 		dependentVersion: string().oneOf(['upgrade', 'fix']).default('upgrade')
 	})
