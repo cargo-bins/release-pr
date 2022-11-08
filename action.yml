@@ -15,7 +15,8 @@ inputs:
     required: false
   crate-release-all:
     description: Release all crates in the workspace
-    required: false
+    required: true
+    default: false
   version:
     description: Version to release, or one of the keywords `major`, `minor`, `patch`
     required: true
