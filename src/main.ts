@@ -139,7 +139,11 @@ interface CrateDetails {
 	version: string;
 }
 
-async function findCrates({name, path, releaseAll}: CrateArgs): Promise<CrateDetails[]> {
+async function findCrates({
+	name,
+	path,
+	releaseAll
+}: CrateArgs): Promise<CrateDetails[]> {
 	if (!name && !path) {
 		// check for a valid crate at the root
 		try {
@@ -214,7 +218,7 @@ async function runCargoRelease(
 			'upgrade',
 			version
 		],
-		{cwd: cwd}
+		{cwd}
 	);
 
 	debug('checking version after releasing');
@@ -224,7 +228,7 @@ async function runCargoRelease(
 		cratesArg = {releaseAll: true};
 	}
 	const newCrates = await pkgid(cratesArg);
-	
+
 	// at this point, we should have a single version even if there are multiple crates
 	const newVersion = newCrates[0].version;
 
@@ -283,9 +287,9 @@ async function makePR(
 	branchName: string,
 	newVersion: string
 ): Promise<void> {
-	let {pr} = inputs;
+	const {pr} = inputs;
 	if (inputs.crate.releaseAll) {
-		pr.title = "release: v<%= version.actual %>"
+		pr.title = 'release: v<%= version.actual %>';
 	}
 	const vars: TemplateVars = {
 		pr,
@@ -461,7 +465,9 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails[]> {
 		if (!parsed) throw new Error('no good crate found');
 		return [parsed];
 	} else {
-		info('multiple crates in the workspace, releasing all if crate-release-all option is set');
+		info(
+			'multiple crates in the workspace, releasing all if crate-release-all option is set'
+		);
 		if (!crate.releaseAll) throw new Error('release-all option not set');
 
 		const parsed: CrateDetails[] = [];
@@ -475,7 +481,9 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails[]> {
 					previousVersion = p.version;
 				} else {
 					if (p.version !== previousVersion) {
-						throw new Error('multiple crates with different versions');
+						throw new Error(
+							'multiple crates with different versions'
+						);
 					}
 				}
 
@@ -485,7 +493,6 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails[]> {
 		if (!parsed.length) throw new Error('no good crates found');
 		return parsed;
 	}
-
 
 	throw new Error('no matching crate found');
 }

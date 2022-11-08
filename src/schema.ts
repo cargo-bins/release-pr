@@ -15,7 +15,7 @@ const SCHEMA = object({
 		path: string().optional(),
 		releaseAll: bool().default(false),
 		exclusive: bool().when(['name', 'path', 'releaseAll'], {
-			is: (name: string, path: string, all: boolean) => 
+			is: (name: string, path: string, all: boolean) =>
 				((name?.length ?? 0) > 0 || (path?.length ?? 0) > 0) && all,
 
 			then: bool().required(
