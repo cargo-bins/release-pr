@@ -65,7 +65,7 @@ inputs:
     required: true
     default: release
   options-dependent-version:
-    description: `--dependent-version` option for cargo release (`upgrade`, `fix`)
+    description: Cargo release `--dependent-version` option (`upgrade`, `fix`)
     required: false
     default: upgrade
 outputs:
