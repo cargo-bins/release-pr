@@ -20,26 +20,28 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
 (async () => {
     try {
         const inputs = await (0, schema_1.default)();
-        const hasCrate = !!(inputs.crate.name || inputs.crate.path);
-        const crate = await findCrate(inputs.crate);
+        const crates = await findCrates(inputs.crate);
+        const hasSingleCrate = crates.length === 1;
         await setGithubUser(inputs.git);
         await unshallowGit();
         await fetchGitTags();
         const octokit = (0, github_1.getOctokit)(inputs.githubToken);
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
-        let branchName = makeBranchName(inputs.version, hasCrate && crate.name, inputs.git);
+        let branchName = makeBranchName(inputs.version, hasSingleCrate && crates[0].name, inputs.git);
         await makeBranch(branchName);
-        const newVersion = await runCargoRelease(crate, inputs.version, branchName);
+        const newVersion = await runCargoRelease(hasSingleCrate, crates, inputs.version, branchName);
         if (inputs.checkSemver) {
-            await runSemverChecks(crate);
+            for (const crate of crates) {
+                await runSemverChecks(crate);
+            }
         }
         if (inputs.version !== newVersion) {
-            branchName = branchName = makeBranchName(newVersion, hasCrate && crate.name, inputs.git);
+            branchName = branchName = makeBranchName(newVersion, hasSingleCrate && crates[0].name, inputs.git);
             await renameBranch(branchName);
         }
         (0, core_1.setOutput)('pr-branch', branchName);
         await pushBranch(branchName);
-        await makePR(octokit, inputs, crate, baseBranch, branchName, newVersion);
+        await makePR(octokit, inputs, crates[0], baseBranch, branchName, newVersion);
     }
     catch (error) {
         if (error instanceof Error)
@@ -79,14 +81,14 @@ async function renameBranch(branchName) {
     (0, core_1.info)(`Renaming branch to ${branchName}`);
     await execAndSucceed('git', ['branch', '-M', branchName]);
 }
-async function findCrate({ name, path }) {
+async function findCrates({ name, path, releaseAll }) {
     if (!name && !path) {
         // check for a valid crate at the root
         try {
-            return await pkgid();
+            return await pkgid({ releaseAll });
         }
         catch (err) {
-            (0, core_1.error)('No crate found at the root, try specifying crate-name or crate-path.');
+            (0, core_1.error)('No crates found at the root, try specifying crate-name or crate-path.');
             throw err;
         }
     }
@@ -107,7 +109,8 @@ async function findCrate({ name, path }) {
         }
     }
 }
-async function runCargoRelease(crate, version, branchName) {
+async function runCargoRelease(hasSingleCrate, crates, version, branchName) {
+    var _a;
     (0, core_1.debug)('checking for presence of cargo-release');
     if (!(await toolExists('cargo-release'))) {
         (0, core_1.warning)('cargo-release is not available, attempting to install it');
@@ -125,6 +128,9 @@ async function runCargoRelease(crate, version, branchName) {
         }
     }
     (0, core_1.debug)('running cargo release');
+    const workspaceRoot = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_root;
+    (0, core_1.debug)(`got workspace root: ${workspaceRoot}`);
+    const cwd = hasSingleCrate ? crates[0].path : workspaceRoot;
     await execAndSucceed('cargo', [
         'release',
         '--execute',
@@ -138,11 +144,17 @@ async function runCargoRelease(crate, version, branchName) {
         '--dependent-version',
         'upgrade',
         version
-    ], { cwd: crate.path });
+    ], { cwd });
     (0, core_1.debug)('checking version after releasing');
-    const { version: newVersion } = await pkgid(crate);
+    let cratesArg = { name: crates[0].name, path: crates[0].path };
+    if (!hasSingleCrate) {
+        cratesArg = { releaseAll: true };
+    }
+    const newCrates = await pkgid(cratesArg);
+    // at this point, we should have a single version even if there are multiple crates
+    const newVersion = newCrates[0].version;
     (0, core_1.info)(`new version: ${newVersion}`);
-    if (newVersion === crate.version)
+    if (newVersion === crates[0].version)
         throw new Error('New and old versions are identical, not proceeding');
     (0, core_1.setOutput)('version', newVersion);
     return newVersion;
@@ -178,6 +190,9 @@ async function pushBranch(branchName) {
 }
 async function makePR(octokit, inputs, crate, baseBranch, branchName, newVersion) {
     const { pr } = inputs;
+    if (inputs.crate.releaseAll) {
+        pr.title = 'release: v<%= version.actual %>';
+    }
     const vars = {
         pr,
         crate: {
@@ -274,7 +289,7 @@ async function pkgid(crate = {}) {
                 continue;
             if ((crate.name && crate.name === parsed.name) ||
                 (cratePath && cratePath === parsed.path))
-                return parsed;
+                return [parsed];
         }
     }
     else if (pkgs.length === 1) {
@@ -282,6 +297,34 @@ async function pkgid(crate = {}) {
         const parsed = parseWorkspacePkg(pkgs[0]);
         if (!parsed)
             throw new Error('no good crate found');
+        return [parsed];
+    }
+    else {
+        if (crate.releaseAll) {
+            (0, core_1.info)('multiple crates in the workspace, releasing all');
+        }
+        else {
+            throw new Error('multiple crates in the workspace, but crate-release-all=false');
+        }
+        const parsed = [];
+        let previousVersion = null;
+        for (const pkg of pkgs) {
+            const p = parseWorkspacePkg(pkg);
+            if (p) {
+                // ensure that all packages in the workspace have the same version
+                if (!previousVersion) {
+                    previousVersion = p.version;
+                }
+                else {
+                    if (p.version !== previousVersion) {
+                        throw new Error('multiple crates with different versions');
+                    }
+                }
+                parsed.push(p);
+            }
+        }
+        if (!parsed.length)
+            throw new Error('no good crates found');
         return parsed;
     }
     throw new Error('no matching crate found');
@@ -325,7 +368,13 @@ const SCHEMA = (0, yup_1.object)({
         .required(),
     crate: (0, yup_1.object)({
         name: (0, yup_1.string)().optional(),
-        path: (0, yup_1.string)().optional()
+        path: (0, yup_1.string)().optional(),
+        releaseAll: (0, yup_1.bool)().default(false),
+        exclusive: (0, yup_1.bool)().when(['name', 'path', 'releaseAll'], {
+            is: (name, path, all) => { var _a, _b; return (((_a = name === null || name === void 0 ? void 0 : name.length) !== null && _a !== void 0 ? _a : 0) > 0 || ((_b = path === null || path === void 0 ? void 0 : path.length) !== null && _b !== void 0 ? _b : 0) > 0) && all; },
+            then: (0, yup_1.bool)().required('You must either specify a crate "name" or "path" to release a single crate, or "release-all" to release all crates in the workspace'),
+            otherwise: (0, yup_1.bool)()
+        })
     })
         .noUnknown()
         .required(),
@@ -365,7 +414,8 @@ async function getInputs() {
         version: (0, core_1.getInput)('version'),
         crate: {
             name: (0, core_1.getInput)('crate-name'),
-            path: (0, core_1.getInput)('crate-path')
+            path: (0, core_1.getInput)('crate-path'),
+            releaseAll: (0, core_1.getInput)('crate-release-all')
         },
         git: {
             name: (0, core_1.getInput)('git-user-name'),
@@ -385,6 +435,7 @@ async function getInputs() {
         }
     });
     delete inputs.pr.templateExclusive;
+    delete inputs.crate.exclusive;
     (0, core_1.debug)(`inputs: ${JSON.stringify(inputs)}`);
     return inputs;
 }

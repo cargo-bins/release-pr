@@ -13,6 +13,10 @@ inputs:
   crate-path:
     description: Path to the crate; defaults to resolving it from workspace
     required: false
+  crate-release-all:
+    description: Release all crates in the workspace
+    required: true
+    default: false
   version:
     description: Version to release, or one of the keywords `major`, `minor`, `patch`
     required: true

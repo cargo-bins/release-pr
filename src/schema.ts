@@ -12,7 +12,17 @@ const SCHEMA = object({
 		.required(),
 	crate: object({
 		name: string().optional(),
-		path: string().optional()
+		path: string().optional(),
+		releaseAll: bool().default(false),
+		exclusive: bool().when(['name', 'path', 'releaseAll'], {
+			is: (name: string, path: string, all: boolean) =>
+				((name?.length ?? 0) > 0 || (path?.length ?? 0) > 0) && all,
+
+			then: bool().required(
+				'You must either specify a crate "name" or "path" to release a single crate, or "release-all" to release all crates in the workspace'
+			),
+			otherwise: bool()
+		})
 	})
 		.noUnknown()
 		.required(),
@@ -59,7 +69,8 @@ export default async function getInputs(): Promise<InputsType> {
 		version: getInput('version'),
 		crate: {
 			name: getInput('crate-name'),
-			path: getInput('crate-path')
+			path: getInput('crate-path'),
+			releaseAll: getInput('crate-release-all')
 		},
 		git: {
 			name: getInput('git-user-name'),
@@ -82,6 +93,7 @@ export default async function getInputs(): Promise<InputsType> {
 	});
 
 	delete inputs.pr.templateExclusive;
+	delete inputs.crate.exclusive;
 	debug(`inputs: ${JSON.stringify(inputs)}`);
 	return inputs;
 }
