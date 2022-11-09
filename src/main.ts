@@ -130,7 +130,7 @@ async function renameBranch(branchName: string): Promise<void> {
 interface CrateArgs {
 	name?: string | undefined | null;
 	path?: string | undefined | null;
-	releaseAll?: boolean | false;
+	releaseAll?: boolean;
 }
 
 interface CrateDetails {
