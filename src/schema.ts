@@ -48,6 +48,11 @@ const SCHEMA = object({
 		releaseNotes: bool().default(false)
 	})
 		.noUnknown()
+		.required(),
+	options: object({
+		dependentVersion: string().oneOf(['upgrade', 'fix']).default('upgrade')
+	})
+		.noUnknown()
 		.required()
 }).noUnknown();
 
@@ -78,6 +83,9 @@ export default async function getInputs(): Promise<InputsType> {
 
 			mergeStrategy: getInput('pr-merge-strategy'),
 			releaseNotes: getInput('pr-release-notes')
+		},
+		options: {
+			dependentVersion: getInput('options-dependent-version')
 		}
 	});
 
