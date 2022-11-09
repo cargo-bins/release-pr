@@ -29,7 +29,7 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
         let branchName = makeBranchName(inputs.version, hasCrate && crate.name, inputs.git);
         await makeBranch(branchName);
-        const newVersion = await runCargoRelease(crate, inputs.version, branchName);
+        const newVersion = await runCargoRelease(crate, inputs.version, branchName, inputs.options);
         if (inputs.checkSemver) {
             await runSemverChecks(crate);
         }
@@ -107,7 +107,7 @@ async function findCrate({ name, path }) {
         }
     }
 }
-async function runCargoRelease(crate, version, branchName) {
+async function runCargoRelease(crate, version, branchName, options) {
     (0, core_1.debug)('checking for presence of cargo-release');
     if (!(await toolExists('cargo-release'))) {
         (0, core_1.warning)('cargo-release is not available, attempting to install it');
@@ -136,7 +136,7 @@ async function runCargoRelease(crate, version, branchName) {
         '--allow-branch',
         branchName,
         '--dependent-version',
-        'upgrade',
+        options.dependentVersion,
         version
     ], { cwd: crate.path });
     (0, core_1.debug)('checking version after releasing');
@@ -356,6 +356,11 @@ const SCHEMA = (0, yup_1.object)({
         releaseNotes: (0, yup_1.bool)().default(false)
     })
         .noUnknown()
+        .required(),
+    options: (0, yup_1.object)({
+        dependentVersion: (0, yup_1.string)().oneOf(['upgrade', 'fix']).default('upgrade')
+    })
+        .noUnknown()
         .required()
 }).noUnknown();
 async function getInputs() {
@@ -382,6 +387,9 @@ async function getInputs() {
             templateFile: (0, core_1.getInput)('pr-template-file'),
             mergeStrategy: (0, core_1.getInput)('pr-merge-strategy'),
             releaseNotes: (0, core_1.getInput)('pr-release-notes')
+        },
+        options: {
+            dependentVersion: (0, core_1.getInput)('options-dependent-version')
         }
     });
     delete inputs.pr.templateExclusive;
