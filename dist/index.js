@@ -29,7 +29,7 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
         let branchName = makeBranchName(inputs.version, hasSingleCrate && crates[0].name, inputs.git);
         await makeBranch(branchName);
-        const newVersion = await runCargoRelease(hasSingleCrate, crates, inputs.version, branchName);
+        const newVersion = await runCargoRelease(hasSingleCrate, crates, inputs.version, branchName, inputs.options);
         if (inputs.checkSemver) {
             for (const crate of crates) {
                 await runSemverChecks(crate);
@@ -109,7 +109,7 @@ async function findCrates({ name, path, releaseAll }) {
         }
     }
 }
-async function runCargoRelease(hasSingleCrate, crates, version, branchName) {
+async function runCargoRelease(hasSingleCrate, crates, version, branchName, options) {
     var _a;
     (0, core_1.debug)('checking for presence of cargo-release');
     if (!(await toolExists('cargo-release'))) {
@@ -142,7 +142,7 @@ async function runCargoRelease(hasSingleCrate, crates, version, branchName) {
         '--allow-branch',
         branchName,
         '--dependent-version',
-        'upgrade',
+        options.dependentVersion,
         version
     ], { cwd });
     (0, core_1.debug)('checking version after releasing');
@@ -405,6 +405,11 @@ const SCHEMA = (0, yup_1.object)({
         releaseNotes: (0, yup_1.bool)().default(false)
     })
         .noUnknown()
+        .required(),
+    options: (0, yup_1.object)({
+        dependentVersion: (0, yup_1.string)().oneOf(['upgrade', 'fix']).default('upgrade')
+    })
+        .noUnknown()
         .required()
 }).noUnknown();
 async function getInputs() {
@@ -432,6 +437,9 @@ async function getInputs() {
             templateFile: (0, core_1.getInput)('pr-template-file'),
             mergeStrategy: (0, core_1.getInput)('pr-merge-strategy'),
             releaseNotes: (0, core_1.getInput)('pr-release-notes')
+        },
+        options: {
+            dependentVersion: (0, core_1.getInput)('options-dependent-version')
         }
     });
     delete inputs.pr.templateExclusive;
