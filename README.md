@@ -110,7 +110,7 @@ it will instead attempt to use that to install `cargo-release`.
 The action runs `cargo-release` with these CLI options:
 
 - `--verbose`
-- `--dependent-version upgrade`
+- `--dependent-version upgrade` by default, use `options-dependent-version` to override
 - `--execute`, `--no-confirm` (no dry run)
 - `--no-push`, `--no-tag` (only commit)
 - `--no-publish` (no publishing to crates.io yet)
@@ -146,6 +146,7 @@ Doing so will break this action.
 | `git-user-email` | String | `github-actions@github.com` | The git user email, which will be used for the release commit. |
 | `base-branch` | String | _(discovered)_ | The branch which the release PR will target. Note that the action does _not_ checkout this branch, so mismatches could cause odd behaviour. Defaults to the repo's configured default branch. |
 | `branch-prefix` | String | `release` | The prefix to use to name the branch used for the PR. This will be joined onto the `version` input with `/`. |
+| `options-dependent-version` | String | `upgrade` | `--dependent-version` option to `cargo release`. Specify how workspace dependencies should be handed. May be one of `upgrade`, `fix`. |
 
 [EJS]: https://www.npmjs.com/package/ejs
 [default template]: ./src/default-template.ejs

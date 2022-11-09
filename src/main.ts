@@ -42,7 +42,8 @@ import {Octokit} from '@octokit/core';
 			hasSingleCrate,
 			crates,
 			inputs.version,
-			branchName
+			branchName,
+			inputs.options
 		);
 
 		if (inputs.checkSemver) {
@@ -139,6 +140,10 @@ interface CrateDetails {
 	version: string;
 }
 
+interface CargoReleaseOptions {
+	dependentVersion: string;
+}
+
 async function findCrates({
 	name,
 	path,
@@ -175,7 +180,8 @@ async function runCargoRelease(
 	hasSingleCrate: boolean,
 	crates: CrateDetails[],
 	version: string,
-	branchName: string
+	branchName: string,
+	options: CargoReleaseOptions
 ): Promise<string> {
 	debug('checking for presence of cargo-release');
 	if (!(await toolExists('cargo-release'))) {
@@ -215,7 +221,7 @@ async function runCargoRelease(
 			'--allow-branch',
 			branchName,
 			'--dependent-version',
-			'upgrade',
+			options.dependentVersion,
 			version
 		],
 		{cwd}
