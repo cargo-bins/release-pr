@@ -19,7 +19,7 @@ const SCHEMA = object({
 				((name?.length ?? 0) > 0 || (path?.length ?? 0) > 0) && all,
 
 			then: bool().required(
-				'You must either specify a crate "name" & "path" to release a single crate, or "release-all" to release all crates in the workspace'
+				'You must either specify a crate "name" or "path" to release a single crate, or "release-all" to release all crates in the workspace'
 			),
 			otherwise: bool()
 		})

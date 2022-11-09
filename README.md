@@ -132,6 +132,7 @@ Doing so will break this action.
 | `version` | String | _required_ | The exact version to release, or any of the [bump levels](https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md#bump-level) `cargo-release` supports. It's recommended to use an exact version. |
 | `crate-name` | String | _(discovered)_ | The `name` of the crate to publish. This is required if there is more than one crate in the repo, e.g. for workspaces, unless `crate-path` is provided. |
 | `crate-path` | String | _(discovered)_ | The relative (from the repo root) path to the crate to publish. This is required if there is more than one crate in the repo, e.g. for workspaces, unless `crate-name` is provided. |
+| `crate-release-all` | Boolean | _(discovered)_ | Flag to release all crates in the workspace. This option implicitly requires all found crates to have the same version. |
 | `pr-title` | String | `release: <%= crate.name %> v<%= version.actual %>` | An [EJS] template string (or a literal string, so long as no EJS tags are present) for the title of the PR. |
 | `pr-label` | String | _optional_ | The name of a label to add to the PR. |
 | `pr-draft` | Boolean | `false` | Set to `true` to create the PR as Draft. |

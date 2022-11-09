@@ -195,12 +195,12 @@ async function runCargoRelease(
 	}
 
 	debug('running cargo release');
-	const workspace_root: string = JSON.parse(
+	const workspaceRoot: string = JSON.parse(
 		await execWithOutput('cargo', ['metadata', '--format-version=1'])
 	)?.workspace_root;
-	debug(`got workspace root: ${workspace_root}`);
+	debug(`got workspace root: ${workspaceRoot}`);
 
-	const cwd = hasSingleCrate ? crates[0].path : workspace_root;
+	const cwd = hasSingleCrate ? crates[0].path : workspaceRoot;
 
 	await execAndSucceed(
 		'cargo',
@@ -465,10 +465,13 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails[]> {
 		if (!parsed) throw new Error('no good crate found');
 		return [parsed];
 	} else {
-		info(
-			'multiple crates in the workspace, releasing all if crate-release-all option is set'
-		);
-		if (!crate.releaseAll) throw new Error('release-all option not set');
+		if (crate.releaseAll) {
+			info('multiple crates in the workspace, releasing all');
+		} else {
+			throw new Error(
+				'multiple crates in the workspace, but crate-release-all=false'
+			);
+		}
 
 		const parsed: CrateDetails[] = [];
 		let previousVersion = null;
