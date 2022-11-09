@@ -128,9 +128,9 @@ async function runCargoRelease(hasSingleCrate, crates, version, branchName) {
         }
     }
     (0, core_1.debug)('running cargo release');
-    const workspace_root = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_root;
-    (0, core_1.debug)(`got workspace root: ${workspace_root}`);
-    const cwd = hasSingleCrate ? crates[0].path : workspace_root;
+    const workspaceRoot = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_root;
+    (0, core_1.debug)(`got workspace root: ${workspaceRoot}`);
+    const cwd = hasSingleCrate ? crates[0].path : workspaceRoot;
     await execAndSucceed('cargo', [
         'release',
         '--execute',
@@ -144,7 +144,7 @@ async function runCargoRelease(hasSingleCrate, crates, version, branchName) {
         '--dependent-version',
         'upgrade',
         version
-    ], { cwd: cwd });
+    ], { cwd });
     (0, core_1.debug)('checking version after releasing');
     let cratesArg = { name: crates[0].name, path: crates[0].path };
     if (!hasSingleCrate) {
@@ -189,9 +189,9 @@ async function pushBranch(branchName) {
     await execAndSucceed('git', ['push', 'origin', branchName]);
 }
 async function makePR(octokit, inputs, crate, baseBranch, branchName, newVersion) {
-    let { pr } = inputs;
+    const { pr } = inputs;
     if (inputs.crate.releaseAll) {
-        pr.title = "release: v<%= version.actual %>";
+        pr.title = 'release: v<%= version.actual %>';
     }
     const vars = {
         pr,
@@ -300,9 +300,12 @@ async function pkgid(crate = {}) {
         return [parsed];
     }
     else {
-        (0, core_1.info)('multiple crates in the workspace, releasing all if crate-release-all option is set');
-        if (!crate.releaseAll)
-            throw new Error('release-all option not set');
+        if (crate.releaseAll) {
+            (0, core_1.info)('multiple crates in the workspace, releasing all');
+        }
+        else {
+            throw new Error('multiple crates in the workspace, but crate-release-all=false');
+        }
         const parsed = [];
         let previousVersion = null;
         for (const pkg of pkgs) {
@@ -369,7 +372,7 @@ const SCHEMA = (0, yup_1.object)({
         releaseAll: (0, yup_1.bool)().default(false),
         exclusive: (0, yup_1.bool)().when(['name', 'path', 'releaseAll'], {
             is: (name, path, all) => { var _a, _b; return (((_a = name === null || name === void 0 ? void 0 : name.length) !== null && _a !== void 0 ? _a : 0) > 0 || ((_b = path === null || path === void 0 ? void 0 : path.length) !== null && _b !== void 0 ? _b : 0) > 0) && all; },
-            then: (0, yup_1.bool)().required('You must either specify a crate "name" & "path" to release a single crate, or "release-all" to release all crates in the workspace'),
+            then: (0, yup_1.bool)().required('You must either specify a crate "name" or "path" to release a single crate, or "release-all" to release all crates in the workspace'),
             otherwise: (0, yup_1.bool)()
         })
     })
