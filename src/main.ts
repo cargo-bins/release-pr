@@ -204,14 +204,15 @@ async function runCargoRelease(
 	)?.workspace_root;
 	debug(`got workspace root: ${workspaceRoot}`);
 
-	const cwd = crates[0]?.path ?? workspaceRoot;
+	const cwd = (crates.length === 1 ? crates[0]?.path : null) ?? workspaceRoot;
 	debug(`got cwd: ${cwd}`);
 
 	const crVersion = semver.clean(
-		(await execWithOutput('cargo', ['release', '--version'])).split(
-			' '
-		)[0] ?? ''
+		((await execWithOutput('cargo', ['release', '--version']))
+		.match(/cargo-release\s+([\d.]+)/i) ?? [])[1]
+		?? ''
 	);
+	debug(`got cargo-release version: ${crVersion}`);
 	if (crVersion && semver.satisfies(crVersion, '^0.23.0')) {
 		debug('Using new cargo-release 0.23');
 
