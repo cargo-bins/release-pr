@@ -6,6 +6,10 @@ This is a release PR for version **<%= version.actual %>**<%
     }
 %>
 
+<% if (crates.length > 1) { %>
+It releases <%= crates.length %> crates: <%= crates.join(", ") %>.
+<% } %>
+
 <% if (pr.mergeStrategy == "merge") { %>
 **Use a merge commit.**
 <% } else if (pr.mergeStrategy == "rebase") { %>
