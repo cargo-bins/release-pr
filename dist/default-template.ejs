@@ -1,3 +1,7 @@
+<% if (pr.metaComment) { %>
+<!-- <%= JSON.stringify({ "release-pr": { v2: { crates, version } } }) %>
+<% } %>
+
 This is a release PR for version **<%= version.actual %>**<%
     if (version.actual != version.desired) {
 %> (performing a <%= version.desired %> bump).<%

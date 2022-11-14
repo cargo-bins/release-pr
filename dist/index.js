@@ -28,7 +28,8 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
         await fetchGitTags();
         const octokit = (0, github_1.getOctokit)(inputs.githubToken);
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
-        let branchName = makeBranchName(inputs.version, (_a = crates[0]) === null || _a === void 0 ? void 0 : _a.name, inputs.git);
+        const branchCore = (_b = (crates.length === 1 ? (_a = crates[0]) === null || _a === void 0 ? void 0 : _a.name : 'all')) !== null && _b !== void 0 ? _b : 'crate';
+        let branchName = makeBranchName(inputs.version, branchCore, inputs.git);
         await makeBranch(branchName);
         const newVersion = await runCargoRelease(crates, inputs.version, branchName);
         if (inputs.checkSemver) {
@@ -37,7 +38,7 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
             }
         }
         if (inputs.version !== newVersion) {
-            branchName = branchName = makeBranchName(newVersion, (_b = crates[0]) === null || _b === void 0 ? void 0 : _b.name, inputs.git);
+            branchName = makeBranchName(newVersion, branchCore, inputs.git);
             await renameBranch(branchName);
         }
         (0, core_1.setOutput)('pr-branch', branchName);
@@ -428,7 +429,8 @@ const SCHEMA = (0, yup_1.object)({
         mergeStrategy: (0, yup_1.string)()
             .oneOf(['squash', 'merge', 'rebase', 'bors'])
             .default('squash'),
-        releaseNotes: (0, yup_1.bool)().default(false)
+        releaseNotes: (0, yup_1.bool)().default(false),
+        metaComment: (0, yup_1.bool)().default(true),
     })
         .noUnknown()
         .required()
@@ -457,7 +459,8 @@ async function getInputs() {
             template: (0, core_1.getInput)('pr-template'),
             templateFile: (0, core_1.getInput)('pr-template-file'),
             mergeStrategy: (0, core_1.getInput)('pr-merge-strategy'),
-            releaseNotes: (0, core_1.getInput)('pr-release-notes')
+            releaseNotes: (0, core_1.getInput)('pr-release-notes'),
+            metaComment: (0, core_1.getInput)('pr-meta-comment'),
         }
     });
     delete inputs.pr.templateExclusive;
