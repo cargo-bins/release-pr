@@ -58,7 +58,7 @@ const SCHEMA = object({
 		releaseNotes: bool().default(false)
 	})
 		.noUnknown()
-		.required(),
+		.required()
 }).noUnknown();
 
 export type InputsType = Awaited<ReturnType<typeof SCHEMA.validate>>;
@@ -89,7 +89,7 @@ export default async function getInputs(): Promise<InputsType> {
 
 			mergeStrategy: getInput('pr-merge-strategy'),
 			releaseNotes: getInput('pr-release-notes')
-		},
+		}
 	});
 
 	delete inputs.pr.templateExclusive;

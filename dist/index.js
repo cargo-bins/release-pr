@@ -30,7 +30,7 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
         let branchName = makeBranchName(inputs.version, (_a = crates[0]) === null || _a === void 0 ? void 0 : _a.name, inputs.git);
         await makeBranch(branchName);
-        const newVersion = await runCargoRelease(crates, inputs.version, branchName, inputs.options);
+        const newVersion = await runCargoRelease(crates, inputs.version, branchName);
         if (inputs.checkSemver) {
             for (const crate of crates) {
                 await runSemverChecks(crate);
@@ -110,7 +110,7 @@ async function findCrates({ name, path, releaseAll }) {
         }
     }
 }
-async function runCargoRelease(crates, version, branchName, options) {
+async function runCargoRelease(crates, version, branchName) {
     var _a, _b, _c, _d, _e;
     (0, core_1.debug)('checking for presence of cargo-release');
     if (!(await toolExists('cargo-release'))) {
@@ -133,8 +133,7 @@ async function runCargoRelease(crates, version, branchName, options) {
     (0, core_1.debug)(`got workspace root: ${workspaceRoot}`);
     const cwd = (_c = (crates.length === 1 ? (_b = crates[0]) === null || _b === void 0 ? void 0 : _b.path : null)) !== null && _c !== void 0 ? _c : workspaceRoot;
     (0, core_1.debug)(`got cwd: ${cwd}`);
-    const crVersion = semver_1.default.clean((_e = ((_d = (await execWithOutput('cargo', ['release', '--version']))
-        .match(/cargo-release\s+([\d.]+)/i)) !== null && _d !== void 0 ? _d : [])[1]) !== null && _e !== void 0 ? _e : '');
+    const crVersion = semver_1.default.clean((_e = ((_d = (await execWithOutput('cargo', ['release', '--version'])).match(/cargo-release\s+([\d.]+)/i)) !== null && _d !== void 0 ? _d : [])[1]) !== null && _e !== void 0 ? _e : '');
     (0, core_1.debug)(`got cargo-release version: ${crVersion}`);
     if (crVersion && semver_1.default.satisfies(crVersion, '^0.23.0')) {
         (0, core_1.debug)('Using new cargo-release 0.23');
@@ -155,8 +154,6 @@ async function runCargoRelease(crates, version, branchName, options) {
             '--no-confirm',
             '--allow-branch',
             branchName,
-            '--dependent-version',
-            options.dependentVersion
         ], { cwd });
         (0, core_1.info)('Update lockfile and run check');
         await execAndSucceed('cargo', ['check'], { cwd });
@@ -179,8 +176,6 @@ async function runCargoRelease(crates, version, branchName, options) {
             '--verbose',
             '--allow-branch',
             branchName,
-            '--dependent-version',
-            options.dependentVersion,
             version
         ], { cwd });
     }
@@ -437,11 +432,6 @@ const SCHEMA = (0, yup_1.object)({
     })
         .noUnknown()
         .required(),
-    options: (0, yup_1.object)({
-        dependentVersion: (0, yup_1.string)().oneOf(['upgrade', 'fix']).default('upgrade')
-    })
-        .noUnknown()
-        .required()
 }).noUnknown();
 async function getInputs() {
     (0, core_1.debug)('validating inputs');
@@ -469,9 +459,6 @@ async function getInputs() {
             mergeStrategy: (0, core_1.getInput)('pr-merge-strategy'),
             releaseNotes: (0, core_1.getInput)('pr-release-notes')
         },
-        options: {
-            dependentVersion: (0, core_1.getInput)('options-dependent-version')
-        }
     });
     delete inputs.pr.templateExclusive;
     delete inputs.crate.exclusive;
