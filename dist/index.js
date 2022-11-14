@@ -111,7 +111,7 @@ async function findCrates({ name, path, releaseAll }) {
     }
 }
 async function runCargoRelease(crates, version, branchName, options) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     (0, core_1.debug)('checking for presence of cargo-release');
     if (!(await toolExists('cargo-release'))) {
         (0, core_1.warning)('cargo-release is not available, attempting to install it');
@@ -131,9 +131,11 @@ async function runCargoRelease(crates, version, branchName, options) {
     (0, core_1.debug)('running cargo release');
     const workspaceRoot = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_root;
     (0, core_1.debug)(`got workspace root: ${workspaceRoot}`);
-    const cwd = (_c = (_b = crates[0]) === null || _b === void 0 ? void 0 : _b.path) !== null && _c !== void 0 ? _c : workspaceRoot;
+    const cwd = (_c = (crates.length === 1 ? (_b = crates[0]) === null || _b === void 0 ? void 0 : _b.path : null)) !== null && _c !== void 0 ? _c : workspaceRoot;
     (0, core_1.debug)(`got cwd: ${cwd}`);
-    const crVersion = semver_1.default.clean((_d = (await execWithOutput('cargo', ['release', '--version'])).split(' ')[0]) !== null && _d !== void 0 ? _d : '');
+    const crVersion = semver_1.default.clean((_e = ((_d = (await execWithOutput('cargo', ['release', '--version']))
+        .match(/cargo-release\s+([\d.]+)/i)) !== null && _d !== void 0 ? _d : [])[1]) !== null && _e !== void 0 ? _e : '');
+    (0, core_1.debug)(`got cargo-release version: ${crVersion}`);
     if (crVersion && semver_1.default.satisfies(crVersion, '^0.23.0')) {
         (0, core_1.debug)('Using new cargo-release 0.23');
         try {

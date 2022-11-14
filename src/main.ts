@@ -208,9 +208,9 @@ async function runCargoRelease(
 	debug(`got cwd: ${cwd}`);
 
 	const crVersion = semver.clean(
-		((await execWithOutput('cargo', ['release', '--version']))
-		.match(/cargo-release\s+([\d.]+)/i) ?? [])[1]
-		?? ''
+		((await execWithOutput('cargo', ['release', '--version'])).match(
+			/cargo-release\s+([\d.]+)/i
+		) ?? [])[1] ?? ''
 	);
 	debug(`got cargo-release version: ${crVersion}`);
 	if (crVersion && semver.satisfies(crVersion, '^0.23.0')) {
