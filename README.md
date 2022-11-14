@@ -49,7 +49,7 @@ jobs:
         with:
           tool: cargo-release
 
-      - uses: cargo-bins/release-pr@v1
+      - uses: cargo-bins/release-pr@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           version: ${{ inputs.version }}
@@ -92,7 +92,7 @@ jobs:
         with:
           tool: cargo-release
 
-      - uses: cargo-bins/release-pr@v1
+      - uses: cargo-bins/release-pr@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           version: ${{ inputs.version }}
