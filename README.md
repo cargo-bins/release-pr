@@ -132,8 +132,8 @@ Doing so will break this action.
 | `version` | String | _required_ | The exact version to release, or any of the [bump levels](https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md#bump-level) `cargo-release` supports. It's recommended to use an exact version. |
 | `crate-name` | String | _(discovered)_ | The `name` of the crate to publish. This is required if there is more than one crate in the repo, e.g. for workspaces, unless `crate-path` is provided. |
 | `crate-path` | String | _(discovered)_ | The relative (from the repo root) path to the crate to publish. This is required if there is more than one crate in the repo, e.g. for workspaces, unless `crate-name` is provided. |
-| `crate-release-all` | Boolean | `false` | Flag to release all crates in the workspace. This option implicitly requires all found crates to have the same version. |
-| `pr-title` | String | `release: <%= crate.name %> v<%= version.actual %>` | An [EJS] template string (or a literal string, so long as no EJS tags are present) for the title of the PR. |
+| `crate-release-all` | Boolean | `false` | Flag to release all crates in the workspace. This option implicitly requires all found crates to have the same version. Exclusive against `crate-name` and `crate-path`. |
+| `pr-title` | String | `release: <%= crates.length === 1 ? crates[0].name : '' %> v<%= version.actual %>` | An [EJS] template string (or a literal string, so long as no EJS tags are present) for the title of the PR. |
 | `pr-label` | String | _optional_ | The name of a label to add to the PR. |
 | `pr-draft` | Boolean | `false` | Set to `true` to create the PR as Draft. |
 | `pr-modifiable` | Boolean | `true` | Set to `false` to disallow maintainers from editing the PR. Note that this is rarely enforceable, as the branch is created in the same repo. |
@@ -169,15 +169,23 @@ interface TemplateVars {
     mergeStrategy: string; // value of the `pr-merge-strategy` input
     releaseNotes: boolean; // value of the `pr-release-notes` input
   };
+
+  // if multiple crates are released, `crate` will have the "first"
   crate: {
     name: string; // the name of the crate being released
     path: string; // the full/absolute path to the crate
   };
+  crates: {
+    name: string;
+    path: string;
+  }[];
+
   version: {
     previous: string; // the version of the crate prior to any changes
     actual: string; // the version of the crate after being released
     desired: string; // the value of the `version` input
   };
+
   branchName: string; // the name of the branch used for the PR
   title?: string; // the rendered title of the PR
                   // this is only available to the PR body template

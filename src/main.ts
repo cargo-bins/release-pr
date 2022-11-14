@@ -21,7 +21,6 @@ import {Octokit} from '@octokit/core';
 		const inputs = await getInputs();
 
 		const crates = await findCrates(inputs.crate);
-		const hasSingleCrate = crates.length === 1;
 
 		await setGithubUser(inputs.git);
 		await unshallowGit();
@@ -33,13 +32,12 @@ import {Octokit} from '@octokit/core';
 			inputs.baseBranch || (await getDefaultBranch(octokit));
 		let branchName = makeBranchName(
 			inputs.version,
-			hasSingleCrate && crates[0].name,
+			crates[0]?.name,
 			inputs.git
 		);
 		await makeBranch(branchName);
 
 		const newVersion = await runCargoRelease(
-			hasSingleCrate,
 			crates,
 			inputs.version,
 			branchName,
@@ -55,7 +53,7 @@ import {Octokit} from '@octokit/core';
 		if (inputs.version !== newVersion) {
 			branchName = branchName = makeBranchName(
 				newVersion,
-				hasSingleCrate && crates[0].name,
+				crates[0]?.name,
 				inputs.git
 			);
 			await renameBranch(branchName);
@@ -66,7 +64,7 @@ import {Octokit} from '@octokit/core';
 		await makePR(
 			octokit,
 			inputs,
-			crates[0],
+			crates,
 			baseBranch,
 			branchName,
 			newVersion
@@ -177,7 +175,6 @@ async function findCrates({
 }
 
 async function runCargoRelease(
-	hasSingleCrate: boolean,
 	crates: CrateDetails[],
 	version: string,
 	branchName: string,
@@ -206,7 +203,8 @@ async function runCargoRelease(
 	)?.workspace_root;
 	debug(`got workspace root: ${workspaceRoot}`);
 
-	const cwd = hasSingleCrate ? crates[0].path : workspaceRoot;
+	const cwd = crates[0]?.path ?? workspaceRoot;
+	debug(`got cwd: ${cwd}`);
 
 	await execAndSucceed(
 		'cargo',
@@ -229,11 +227,9 @@ async function runCargoRelease(
 
 	debug('checking version after releasing');
 
-	let cratesArg: CrateArgs = {name: crates[0].name, path: crates[0].path};
-	if (!hasSingleCrate) {
-		cratesArg = {releaseAll: true};
-	}
-	const newCrates = await pkgid(cratesArg);
+	const newCrates = crates.length === 1
+		? await pkgid({name: crates[0].name, path: crates[0].path})
+		: await pkgid({releaseAll: true});
 
 	// at this point, we should have a single version even if there are multiple crates
 	const newVersion = newCrates[0].version;
@@ -288,23 +284,19 @@ async function pushBranch(branchName: string): Promise<void> {
 async function makePR(
 	octokit: Octokit,
 	inputs: InputsType,
-	crate: CrateDetails,
+	crateDetails: CrateDetails[],
 	baseBranch: string,
 	branchName: string,
 	newVersion: string
 ): Promise<void> {
 	const {pr} = inputs;
-	if (inputs.crate.releaseAll) {
-		pr.title = 'release: v<%= version.actual %>';
-	}
+	const crates = crateDetails.map(({ name, path }) => ({ name, path }));
 	const vars: TemplateVars = {
 		pr,
-		crate: {
-			name: crate.name,
-			path: crate.path
-		},
+		crate: crates[0],
+		crates,
 		version: {
-			previous: crate.version,
+			previous: crateDetails[0].version,
 			actual: newVersion,
 			desired: inputs.version
 		},
@@ -383,6 +375,10 @@ interface TemplateVars {
 		name: string;
 		path: string;
 	};
+	crates: {
+		name: string;
+		path: string;
+	}[];
 	version: {
 		previous: string;
 		actual: string;
@@ -436,14 +432,10 @@ function realpath(path: string): string {
 
 type WorkspaceMemberString = `${string} ${string} (${string})`;
 
-async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails[]> {
+async function pkgid(crate: CrateArgs): Promise<CrateDetails[]> {
 	// we actually use cargo-metadata so it works without a Cargo.lock
 	// and equally well for single crates and workspace crates, but the
 	// API is unchanged from original, like if this was pkgid.
-
-	debug(
-		`checking and parsing metadata to find name=${crate.name} path=${crate.path}`
-	);
 
 	const pkgs: WorkspaceMemberString[] = JSON.parse(
 		await execWithOutput('cargo', ['metadata', '--format-version=1'])
@@ -452,6 +444,10 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails[]> {
 
 	// only bother looping if we're searching for something
 	if (crate.name || crate.path) {
+		debug(
+			`checking and parsing metadata to find name=${crate.name} path=${crate.path}`
+		);
+
 		const cratePath = crate.path && realpath(crate.path);
 		debug(`realpath of crate.path: ${cratePath}`);
 
@@ -471,13 +467,13 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails[]> {
 		if (!parsed) throw new Error('no good crate found');
 		return [parsed];
 	} else {
-		if (crate.releaseAll) {
-			info('multiple crates in the workspace, releasing all');
-		} else {
+		if (!crate.releaseAll) {
 			throw new Error(
-				'multiple crates in the workspace, but crate-release-all=false'
+				'multiple crates in the workspace, but crate-release-all is false'
 			);
 		}
+
+		info('multiple crates in the workspace, releasing all');
 
 		const parsed: CrateDetails[] = [];
 		let previousVersion = null;
@@ -491,7 +487,7 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails[]> {
 				} else {
 					if (p.version !== previousVersion) {
 						throw new Error(
-							'multiple crates with different versions'
+							`multiple crates with different versions: crate=${p.name} version=${p.version} expected=${previousVersion}`
 						);
 					}
 				}
@@ -499,6 +495,7 @@ async function pkgid(crate: CrateArgs = {}): Promise<CrateDetails[]> {
 				parsed.push(p);
 			}
 		}
+
 		if (!parsed.length) throw new Error('no good crates found');
 		return parsed;
 	}
