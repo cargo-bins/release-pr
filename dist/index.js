@@ -136,8 +136,8 @@ async function runCargoRelease(crates, version, branchName) {
     (0, core_1.debug)(`got cwd: ${cwd}`);
     const crVersion = semver_1.default.clean((_e = ((_d = (await execWithOutput('cargo', ['release', '--version'])).match(/cargo-release\s+([\d.]+)/i)) !== null && _d !== void 0 ? _d : [])[1]) !== null && _e !== void 0 ? _e : '');
     (0, core_1.debug)(`got cargo-release version: ${crVersion}`);
-    if (crVersion && semver_1.default.satisfies(crVersion, '^0.23.0')) {
-        (0, core_1.debug)('Using new cargo-release 0.23');
+    if (crVersion && semver_1.default.satisfies(crVersion, '>=0.23.0')) {
+        (0, core_1.debug)('Using new cargo-release');
         try {
             (0, core_1.info)('Changes since last release (if any):');
             await execAndSucceed('cargo', ['release', 'changes'], { cwd });
