@@ -227,9 +227,10 @@ async function runCargoRelease(
 
 	debug('checking version after releasing');
 
-	const newCrates = crates.length === 1
-		? await pkgid({name: crates[0].name, path: crates[0].path})
-		: await pkgid({releaseAll: true});
+	const newCrates =
+		crates.length === 1
+			? await pkgid({name: crates[0].name, path: crates[0].path})
+			: await pkgid({releaseAll: true});
 
 	// at this point, we should have a single version even if there are multiple crates
 	const newVersion = newCrates[0].version;
@@ -290,7 +291,7 @@ async function makePR(
 	newVersion: string
 ): Promise<void> {
 	const {pr} = inputs;
-	const crates = crateDetails.map(({ name, path }) => ({ name, path }));
+	const crates = crateDetails.map(({name, path}) => ({name, path}));
 	const vars: TemplateVars = {
 		pr,
 		crate: crates[0],

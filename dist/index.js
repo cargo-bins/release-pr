@@ -18,30 +18,30 @@ const github_1 = __nccwpck_require__(5438);
 const ejs_1 = __nccwpck_require__(8431);
 const schema_1 = __importDefault(__nccwpck_require__(5171));
 (async () => {
+    var _a, _b;
     try {
         const inputs = await (0, schema_1.default)();
         const crates = await findCrates(inputs.crate);
-        const hasSingleCrate = crates.length === 1;
         await setGithubUser(inputs.git);
         await unshallowGit();
         await fetchGitTags();
         const octokit = (0, github_1.getOctokit)(inputs.githubToken);
         const baseBranch = inputs.baseBranch || (await getDefaultBranch(octokit));
-        let branchName = makeBranchName(inputs.version, hasSingleCrate && crates[0].name, inputs.git);
+        let branchName = makeBranchName(inputs.version, (_a = crates[0]) === null || _a === void 0 ? void 0 : _a.name, inputs.git);
         await makeBranch(branchName);
-        const newVersion = await runCargoRelease(hasSingleCrate, crates, inputs.version, branchName, inputs.options);
+        const newVersion = await runCargoRelease(crates, inputs.version, branchName, inputs.options);
         if (inputs.checkSemver) {
             for (const crate of crates) {
                 await runSemverChecks(crate);
             }
         }
         if (inputs.version !== newVersion) {
-            branchName = branchName = makeBranchName(newVersion, hasSingleCrate && crates[0].name, inputs.git);
+            branchName = branchName = makeBranchName(newVersion, (_b = crates[0]) === null || _b === void 0 ? void 0 : _b.name, inputs.git);
             await renameBranch(branchName);
         }
         (0, core_1.setOutput)('pr-branch', branchName);
         await pushBranch(branchName);
-        await makePR(octokit, inputs, crates[0], baseBranch, branchName, newVersion);
+        await makePR(octokit, inputs, crates, baseBranch, branchName, newVersion);
     }
     catch (error) {
         if (error instanceof Error)
@@ -109,8 +109,8 @@ async function findCrates({ name, path, releaseAll }) {
         }
     }
 }
-async function runCargoRelease(hasSingleCrate, crates, version, branchName, options) {
-    var _a;
+async function runCargoRelease(crates, version, branchName, options) {
+    var _a, _b, _c;
     (0, core_1.debug)('checking for presence of cargo-release');
     if (!(await toolExists('cargo-release'))) {
         (0, core_1.warning)('cargo-release is not available, attempting to install it');
@@ -130,7 +130,8 @@ async function runCargoRelease(hasSingleCrate, crates, version, branchName, opti
     (0, core_1.debug)('running cargo release');
     const workspaceRoot = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_root;
     (0, core_1.debug)(`got workspace root: ${workspaceRoot}`);
-    const cwd = hasSingleCrate ? crates[0].path : workspaceRoot;
+    const cwd = (_c = (_b = crates[0]) === null || _b === void 0 ? void 0 : _b.path) !== null && _c !== void 0 ? _c : workspaceRoot;
+    (0, core_1.debug)(`got cwd: ${cwd}`);
     await execAndSucceed('cargo', [
         'release',
         '--execute',
@@ -146,11 +147,9 @@ async function runCargoRelease(hasSingleCrate, crates, version, branchName, opti
         version
     ], { cwd });
     (0, core_1.debug)('checking version after releasing');
-    let cratesArg = { name: crates[0].name, path: crates[0].path };
-    if (!hasSingleCrate) {
-        cratesArg = { releaseAll: true };
-    }
-    const newCrates = await pkgid(cratesArg);
+    const newCrates = crates.length === 1
+        ? await pkgid({ name: crates[0].name, path: crates[0].path })
+        : await pkgid({ releaseAll: true });
     // at this point, we should have a single version even if there are multiple crates
     const newVersion = newCrates[0].version;
     (0, core_1.info)(`new version: ${newVersion}`);
@@ -188,19 +187,15 @@ async function runSemverChecks(crate) {
 async function pushBranch(branchName) {
     await execAndSucceed('git', ['push', 'origin', branchName]);
 }
-async function makePR(octokit, inputs, crate, baseBranch, branchName, newVersion) {
+async function makePR(octokit, inputs, crateDetails, baseBranch, branchName, newVersion) {
     const { pr } = inputs;
-    if (inputs.crate.releaseAll) {
-        pr.title = 'release: v<%= version.actual %>';
-    }
+    const crates = crateDetails.map(({ name, path }) => ({ name, path }));
     const vars = {
         pr,
-        crate: {
-            name: crate.name,
-            path: crate.path
-        },
+        crate: crates[0],
+        crates,
         version: {
-            previous: crate.version,
+            previous: crateDetails[0].version,
             actual: newVersion,
             desired: inputs.version
         },
@@ -271,16 +266,16 @@ function realpath(path) {
     const workdir = process.cwd();
     return (0, path_1.resolve)(workdir, (0, path_1.normalize)(path));
 }
-async function pkgid(crate = {}) {
+async function pkgid(crate) {
     // we actually use cargo-metadata so it works without a Cargo.lock
     // and equally well for single crates and workspace crates, but the
     // API is unchanged from original, like if this was pkgid.
     var _a;
-    (0, core_1.debug)(`checking and parsing metadata to find name=${crate.name} path=${crate.path}`);
     const pkgs = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_members;
     (0, core_1.debug)(`got workspace members: ${JSON.stringify(pkgs)}`);
     // only bother looping if we're searching for something
     if (crate.name || crate.path) {
+        (0, core_1.debug)(`checking and parsing metadata to find name=${crate.name} path=${crate.path}`);
         const cratePath = crate.path && realpath(crate.path);
         (0, core_1.debug)(`realpath of crate.path: ${cratePath}`);
         for (const pkg of pkgs) {
@@ -300,12 +295,10 @@ async function pkgid(crate = {}) {
         return [parsed];
     }
     else {
-        if (crate.releaseAll) {
-            (0, core_1.info)('multiple crates in the workspace, releasing all');
+        if (!crate.releaseAll) {
+            throw new Error('multiple crates in the workspace, but crate-release-all is false');
         }
-        else {
-            throw new Error('multiple crates in the workspace, but crate-release-all=false');
-        }
+        (0, core_1.info)('multiple crates in the workspace, releasing all');
         const parsed = [];
         let previousVersion = null;
         for (const pkg of pkgs) {
@@ -317,7 +310,7 @@ async function pkgid(crate = {}) {
                 }
                 else {
                     if (p.version !== previousVersion) {
-                        throw new Error('multiple crates with different versions');
+                        throw new Error(`multiple crates with different versions: crate=${p.name} version=${p.version} expected=${previousVersion}`);
                     }
                 }
                 parsed.push(p);
