@@ -139,10 +139,6 @@ interface CrateDetails {
 	version: string;
 }
 
-interface CargoReleaseOptions {
-	dependentVersion: string;
-}
-
 async function findCrates({
 	name,
 	path,
@@ -179,7 +175,6 @@ async function runCargoRelease(
 	crates: CrateDetails[],
 	version: string,
 	branchName: string,
-	options: CargoReleaseOptions
 ): Promise<string> {
 	debug('checking for presence of cargo-release');
 	if (!(await toolExists('cargo-release'))) {
@@ -235,8 +230,6 @@ async function runCargoRelease(
 				'--no-confirm',
 				'--allow-branch',
 				branchName,
-				'--dependent-version',
-				options.dependentVersion
 			],
 			{cwd}
 		);
@@ -278,8 +271,6 @@ async function runCargoRelease(
 				'--verbose',
 				'--allow-branch',
 				branchName,
-				'--dependent-version',
-				options.dependentVersion,
 				version
 			],
 			{cwd}

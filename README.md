@@ -107,22 +107,17 @@ examples above. If `cargo-release` is _not_ present when the action runs, it wil
 it with `cargo install` (which can be very slow!). If `cargo-binstall` is available in the workflow,
 it will instead attempt to use that to install `cargo-release`.
 
-The action runs `cargo-release` with these CLI options:
-
-- `--verbose`
-- `--dependent-version upgrade` by default, use `options-dependent-version` to override
-- `--execute`, `--no-confirm` (no dry run)
-- `--no-push`, `--no-tag` (only commit)
-- `--no-publish` (no publishing to crates.io yet)
-- `--allow-branch release/1.2.3` (so that `cargo-release` doesn't refuse to work)
-- with working directory set to the root of the crate being released
+If 0.23 is available, the action runs only the `cargo-release` steps it needs. If an older version
+is present, the simple interface is used, with flags to disable tagging and publishing.
 
 Otherwise, `cargo-release` will behave as normal. Notably, it will read `release.toml` files where
-present, which can provide further configuration. There are two additional restrictions:
+present, which can provide [further configuration][cr-ref]. For example, you may want to customise
+the `dependent-version` behaviour: you should do so by providing a cargo-release config.
 
-You _must not_ disable commit creation, and you _must not_ enable post-release version bumps.
+If using `cargo-release` before 0.23, you _must not_ disable commit creation, and you _must not_
+enable post-release version bumps. Doing so will break this action.
 
-Doing so will break this action.
+[cr-ref]: https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md
 
 ## Inputs
 
@@ -146,7 +141,6 @@ Doing so will break this action.
 | `git-user-email` | String | `github-actions@github.com` | The git user email, which will be used for the release commit. |
 | `base-branch` | String | _(discovered)_ | The branch which the release PR will target. Note that the action does _not_ checkout this branch, so mismatches could cause odd behaviour. Defaults to the repo's configured default branch. |
 | `branch-prefix` | String | `release` | The prefix to use to name the branch used for the PR. This will be joined onto the `version` input with `/`. |
-| `options-dependent-version` | String | `upgrade` | `--dependent-version` option to `cargo release`. Specify how workspace dependencies should be handled. May be one of `upgrade`, `fix`. |
 
 [EJS]: https://www.npmjs.com/package/ejs
 [default template]: ./src/default-template.ejs
