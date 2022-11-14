@@ -430,7 +430,7 @@ const SCHEMA = (0, yup_1.object)({
             .oneOf(['squash', 'merge', 'rebase', 'bors'])
             .default('squash'),
         releaseNotes: (0, yup_1.bool)().default(false),
-        metaComment: (0, yup_1.bool)().default(true),
+        metaComment: (0, yup_1.bool)().default(true)
     })
         .noUnknown()
         .required()
@@ -460,7 +460,7 @@ async function getInputs() {
             templateFile: (0, core_1.getInput)('pr-template-file'),
             mergeStrategy: (0, core_1.getInput)('pr-merge-strategy'),
             releaseNotes: (0, core_1.getInput)('pr-release-notes'),
-            metaComment: (0, core_1.getInput)('pr-meta-comment'),
+            metaComment: (0, core_1.getInput)('pr-meta-comment')
         }
     });
     delete inputs.pr.templateExclusive;
