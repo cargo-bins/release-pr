@@ -7,7 +7,7 @@ This is a release PR for version **<%= version.actual %>**<%
 %>
 
 <% if (crates.length > 1) { %>
-It releases <%= crates.length %> crates: <%= crates.join(", ") %>.
+It releases <%= crates.length %> crates: <%= crates.map(c => `**${c.name}**`).join(", ") %>.
 <% } %>
 
 <% if (pr.mergeStrategy == "merge") { %>

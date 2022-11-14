@@ -153,7 +153,7 @@ async function runCargoRelease(crates, version, branchName) {
             '--verbose',
             '--no-confirm',
             '--allow-branch',
-            branchName,
+            branchName
         ], { cwd });
         (0, core_1.info)('Update lockfile and run check');
         await execAndSucceed('cargo', ['check'], { cwd });
@@ -431,7 +431,7 @@ const SCHEMA = (0, yup_1.object)({
         releaseNotes: (0, yup_1.bool)().default(false)
     })
         .noUnknown()
-        .required(),
+        .required()
 }).noUnknown();
 async function getInputs() {
     (0, core_1.debug)('validating inputs');
@@ -458,7 +458,7 @@ async function getInputs() {
             templateFile: (0, core_1.getInput)('pr-template-file'),
             mergeStrategy: (0, core_1.getInput)('pr-merge-strategy'),
             releaseNotes: (0, core_1.getInput)('pr-release-notes')
-        },
+        }
     });
     delete inputs.pr.templateExclusive;
     delete inputs.crate.exclusive;
