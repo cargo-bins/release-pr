@@ -21,6 +21,7 @@
 		"@actions/exec": "^1.1.1",
 		"@actions/github": "^5.1.1",
 		"ejs": "^3.1.8",
+		"semver": "^7.3.8",
 		"yup": "^0.32.11"
 	},
 	"engines": {

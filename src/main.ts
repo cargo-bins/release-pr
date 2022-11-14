@@ -12,6 +12,7 @@ import {
 import {exec as _exec, ExecOptions, getExecOutput} from '@actions/exec';
 import {getOctokit, context} from '@actions/github';
 import {render as _render} from 'ejs';
+import semver from 'semver';
 
 import getInputs, {InputsType} from './schema';
 import {Octokit} from '@octokit/core';
@@ -153,7 +154,7 @@ async function findCrates({
 			return await pkgid({releaseAll});
 		} catch (err) {
 			_error(
-				'No crates found at the root, try specifying crate-name or crate-path.'
+				'No crates found at the root, try specifying crate-name, crate-path, or crate-release-all.'
 			);
 			throw err;
 		}
@@ -206,24 +207,53 @@ async function runCargoRelease(
 	const cwd = crates[0]?.path ?? workspaceRoot;
 	debug(`got cwd: ${cwd}`);
 
-	await execAndSucceed(
-		'cargo',
-		[
-			'release',
-			'--execute',
-			'--no-push',
-			'--no-tag',
-			'--no-publish',
-			'--no-confirm',
-			'--verbose',
-			'--allow-branch',
-			branchName,
-			'--dependent-version',
-			options.dependentVersion,
-			version
-		],
-		{cwd}
-	);
+	const crVersion = semver.clean((await execWithOutput('cargo', ['release', '--version'])).split(' ')[0] ?? '');
+	if (crVersion && semver.satisfies(crVersion, '^0.23.0')) {
+		debug('Using new cargo-release 0.23');
+
+		info('Changes since last release (if any):');
+		await execAndSucceed('cargo', ['release', 'changes'], {cwd}).catch(() => {});
+
+		info('Bump version');
+		await execAndSucceed('cargo', ['release', 'version', version, '--execute', '--verbose', '--no-confirm',
+				'--allow-branch',
+				branchName,
+				'--dependent-version',
+				options.dependentVersion,
+		], {cwd});
+
+		info('Update lockfile and run check');
+		await execAndSucceed('cargo', ['check'], {cwd});
+
+		info('Perform replaces');
+		await execAndSucceed('cargo', ['release', 'replace', '--execute', '--verbose', '--no-confirm'], {cwd});
+
+		info('Run hooks');
+		await execAndSucceed('cargo', ['release', 'hook', '--execute', '--verbose', '--no-confirm'], {cwd});
+
+		info('Commit');
+		await execAndSucceed('cargo', ['release', 'commit', '--execute', '--verbose', '--no-confirm'], {cwd});
+	} else {
+		debug('Using old cargo-release');
+		await execAndSucceed(
+			'cargo',
+			[
+				'release',
+				'--execute',
+				'--no-push',
+				'--no-tag',
+				'--no-publish',
+				'--no-confirm',
+				'--verbose',
+				'--allow-branch',
+				branchName,
+				'--dependent-version',
+				options.dependentVersion,
+				version
+			],
+			{cwd}
+		);
+	}
 
 	debug('checking version after releasing');
 
