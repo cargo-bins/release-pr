@@ -422,6 +422,7 @@ interface TemplateVars {
 
 		mergeStrategy: string;
 		releaseNotes: boolean;
+		metaComment: boolean;
 	};
 	crate: {
 		name: string;

@@ -55,7 +55,8 @@ const SCHEMA = object({
 		mergeStrategy: string()
 			.oneOf(['squash', 'merge', 'rebase', 'bors'])
 			.default('squash'),
-		releaseNotes: bool().default(false)
+		releaseNotes: bool().default(false),
+		metaComment: bool().default(true),
 	})
 		.noUnknown()
 		.required()
@@ -89,6 +90,7 @@ export default async function getInputs(): Promise<InputsType> {
 
 			mergeStrategy: getInput('pr-merge-strategy'),
 			releaseNotes: getInput('pr-release-notes')
+			metaComment: getInput('pr-meta-comment')
 		}
 	});
 

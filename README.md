@@ -136,6 +136,7 @@ enable post-release version bumps. Doing so will break this action.
 | `pr-template-file` | String | _optional_ | The path to an [EJS] template file for the body of the PR. This is mutually exclusive with `pr-template`. If neither is provided, the [default template] is used. |
 | `pr-merge-strategy` | String | `squash` | The merge strategy that should be used to merge the release PR. Note that this action is not involved in merging the PR; this input is only a hint which is rendered by the (default) template. May be either of: `squash`, `merge`, `rebase`, `bors`. |
 | `pr-release-notes` | Boolean | `false` | Includes a section in the PR body (with the default template) which can be used to fill in release notes. |
+| `pr-meta-comment` | Boolean | `true` | Includes a comment containing some JSON metadata about the release (with the default template) in the PR body, for other actions to consume later. |
 | `check-semver` | Boolean | `false` | Use [`cargo-semver-checks`](https://github.com/obi1kenobi/cargo-semver-check) to check the release before pushing it. For this to work, the current version of the crate must be published to the registry. |
 | `git-user-name` | String | `github-actions` | The git user name, which will be used for the release commit. |
 | `git-user-email` | String | `github-actions@github.com` | The git user email, which will be used for the release commit. |
@@ -162,6 +163,7 @@ interface TemplateVars {
 
     mergeStrategy: string; // value of the `pr-merge-strategy` input
     releaseNotes: boolean; // value of the `pr-release-notes` input
+    metaComment: boolean; // value of the `pr-meta-comment` input
   };
 
   // if multiple crates are released, `crate` will have the "first"

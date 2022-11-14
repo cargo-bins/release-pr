@@ -49,6 +49,10 @@ inputs:
     description: Include a release notes section in the PR body
     required: true
     default: false
+  pr-meta-comment:
+    description: Include release metadata as JSON-in-comment in the PR body
+    required: true
+    default: true
   git-user-name:
     description: Name of the git user that will commit the release
     required: true
@@ -68,10 +72,6 @@ inputs:
     description: Prefix of the release branch created for the PR
     required: true
     default: release
-  options-dependent-version:
-    description: Cargo release `--dependent-version` option (`upgrade`, `fix`)
-    required: false
-    default: upgrade
 outputs:
   pr-branch:
     description: Branch name of the release PR
