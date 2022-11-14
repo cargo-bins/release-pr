@@ -31,9 +31,10 @@ import {Octokit} from '@octokit/core';
 
 		const baseBranch =
 			inputs.baseBranch || (await getDefaultBranch(octokit));
+		const branchCore = (crates.length === 1 ? crates[0]?.name : 'all') ?? 'crate';
 		let branchName = makeBranchName(
 			inputs.version,
-			crates[0]?.name,
+			branchCore,
 			inputs.git
 		);
 		await makeBranch(branchName);
@@ -51,9 +52,9 @@ import {Octokit} from '@octokit/core';
 		}
 
 		if (inputs.version !== newVersion) {
-			branchName = branchName = makeBranchName(
+			branchName = makeBranchName(
 				newVersion,
-				crates[0]?.name,
+				branchCore,
 				inputs.git
 			);
 			await renameBranch(branchName);

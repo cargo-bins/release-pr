@@ -89,8 +89,8 @@ export default async function getInputs(): Promise<InputsType> {
 			templateFile: getInput('pr-template-file'),
 
 			mergeStrategy: getInput('pr-merge-strategy'),
-			releaseNotes: getInput('pr-release-notes')
-			metaComment: getInput('pr-meta-comment')
+			releaseNotes: getInput('pr-release-notes'),
+			metaComment: getInput('pr-meta-comment'),
 		}
 	});
 
