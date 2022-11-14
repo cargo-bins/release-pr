@@ -207,32 +207,62 @@ async function runCargoRelease(
 	const cwd = crates[0]?.path ?? workspaceRoot;
 	debug(`got cwd: ${cwd}`);
 
-	const crVersion = semver.clean((await execWithOutput('cargo', ['release', '--version'])).split(' ')[0] ?? '');
+	const crVersion = semver.clean(
+		(await execWithOutput('cargo', ['release', '--version'])).split(
+			' '
+		)[0] ?? ''
+	);
 	if (crVersion && semver.satisfies(crVersion, '^0.23.0')) {
 		debug('Using new cargo-release 0.23');
 
-		info('Changes since last release (if any):');
-		await execAndSucceed('cargo', ['release', 'changes'], {cwd}).catch(() => {});
+		try {
+			info('Changes since last release (if any):');
+			await execAndSucceed('cargo', ['release', 'changes'], {cwd});
+		} catch (_err: unknown) {
+			// ignore
+		}
 
 		info('Bump version');
-		await execAndSucceed('cargo', ['release', 'version', version, '--execute', '--verbose', '--no-confirm',
+		await execAndSucceed(
+			'cargo',
+			[
+				'release',
+				'version',
+				version,
+				'--execute',
+				'--verbose',
+				'--no-confirm',
 				'--allow-branch',
 				branchName,
 				'--dependent-version',
-				options.dependentVersion,
-		], {cwd});
+				options.dependentVersion
+			],
+			{cwd}
+		);
 
 		info('Update lockfile and run check');
 		await execAndSucceed('cargo', ['check'], {cwd});
 
 		info('Perform replaces');
-		await execAndSucceed('cargo', ['release', 'replace', '--execute', '--verbose', '--no-confirm'], {cwd});
+		await execAndSucceed(
+			'cargo',
+			['release', 'replace', '--execute', '--verbose', '--no-confirm'],
+			{cwd}
+		);
 
 		info('Run hooks');
-		await execAndSucceed('cargo', ['release', 'hook', '--execute', '--verbose', '--no-confirm'], {cwd});
+		await execAndSucceed(
+			'cargo',
+			['release', 'hook', '--execute', '--verbose', '--no-confirm'],
+			{cwd}
+		);
 
 		info('Commit');
-		await execAndSucceed('cargo', ['release', 'commit', '--execute', '--verbose', '--no-confirm'], {cwd});
+		await execAndSucceed(
+			'cargo',
+			['release', 'commit', '--execute', '--verbose', '--no-confirm'],
+			{cwd}
+		);
 	} else {
 		debug('Using old cargo-release');
 		await execAndSucceed(
