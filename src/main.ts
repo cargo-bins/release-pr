@@ -201,8 +201,8 @@ async function runCargoRelease(
 		) ?? [])[1] ?? ''
 	);
 	debug(`got cargo-release version: ${crVersion}`);
-	if (crVersion && semver.satisfies(crVersion, '^0.23.0')) {
-		debug('Using new cargo-release 0.23');
+	if (crVersion && semver.satisfies(crVersion, '>=0.23.0')) {
+		debug('Using new cargo-release');
 
 		try {
 			info('Changes since last release (if any):');
