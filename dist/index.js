@@ -439,6 +439,7 @@ async function getInputs() {
     (0, core_1.debug)('validating inputs');
     const inputs = await SCHEMA.validate({
         githubToken: (0, core_1.getInput)('github-token'),
+        baseBranch: (0, core_1.getInput)('base-branch'),
         version: (0, core_1.getInput)('version'),
         crate: {
             name: (0, core_1.getInput)('crate-name'),
