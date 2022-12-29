@@ -67,6 +67,7 @@ export default async function getInputs(): Promise<InputsType> {
 	debug('validating inputs');
 	const inputs = await SCHEMA.validate({
 		githubToken: getInput('github-token'),
+		baseBranch: getInput('base-branch'),
 		version: getInput('version'),
 		crate: {
 			name: getInput('crate-name'),
