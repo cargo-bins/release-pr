@@ -99,6 +99,10 @@ jobs:
           crate-name: ${{ inputs.crate }}
 ```
 
+Your repository must be configured (Settings > Actions > General) to allow actions to create Pull Requests:
+
+![image](https://user-images.githubusercontent.com/155787/233333834-4dbe7127-3b6c-4d47-b48a-8a7fdd0b23ce.png)
+
 ## Release configuration
 
 The action does not include a build of `cargo-release` itself. Instead, it's expected that
