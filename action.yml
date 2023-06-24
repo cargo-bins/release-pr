@@ -65,6 +65,10 @@ inputs:
     description: Run cargo-semver-checks before committing to the release
     required: true
     default: false
+  check-package:
+    description: Run `cargo publish --dry-run` before committing to the release
+    required: true
+    default: false
   base-branch:
     description: Name of the PR's base branch (where it will merge). Defaults to repo's default branch.
     required: false
