@@ -37,6 +37,16 @@ const schema_1 = __importDefault(__nccwpck_require__(5171));
                 await runSemverChecks(crate);
             }
         }
+        if (inputs.checkPackage) {
+            for (const crate of crates) {
+                await execAndSucceed('cargo', [
+                    'publish',
+                    '--dry-run',
+                    '-p',
+                    crate.name
+                ]);
+            }
+        }
         if (inputs.version !== newVersion) {
             branchName = makeBranchName(newVersion, branchCore, inputs.git);
             await renameBranch(branchName);
@@ -414,6 +424,7 @@ const SCHEMA = (0, yup_1.object)({
         .noUnknown()
         .required(),
     checkSemver: (0, yup_1.bool)().default(false),
+    checkPackage: (0, yup_1.bool)().default(false),
     pr: (0, yup_1.object)({
         title: (0, yup_1.string)().required(),
         label: (0, yup_1.string)().optional(),
@@ -452,6 +463,7 @@ async function getInputs() {
             branchPrefix: (0, core_1.getInput)('branch-prefix')
         },
         checkSemver: (0, core_1.getInput)('check-semver'),
+        checkPackage: (0, core_1.getInput)('check-package'),
         pr: {
             title: (0, core_1.getInput)('pr-title'),
             label: (0, core_1.getInput)('pr-label'),

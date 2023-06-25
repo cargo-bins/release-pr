@@ -48,6 +48,17 @@ import {Octokit} from '@octokit/core';
 			}
 		}
 
+		if (inputs.checkPackage) {
+			for (const crate of crates) {
+				await execAndSucceed('cargo', [
+					'publish',
+					'--dry-run',
+					'-p',
+					crate.name
+				]);
+			}
+		}
+
 		if (inputs.version !== newVersion) {
 			branchName = makeBranchName(newVersion, branchCore, inputs.git);
 			await renameBranch(branchName);
