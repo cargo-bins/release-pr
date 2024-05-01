@@ -175,27 +175,27 @@ async function findCrates({
 	}
 }
 
+async function installToolIfNotExists(tool: string): Promise<void> {
+	debug(`checking for presence of ${tool}`);
+	if (!(await toolExists(tool))) {
+		warning(`${tool} is not available, attempting to install it`);
+
+		if (await toolExists('cargo-binstall')) {
+			info(`trying to install ${tool} with cargo-binstall`);
+			await execAndSucceed('cargo', ['binstall', '--no-confirm', tool]);
+		} else {
+			info(`trying to install ${tool} with cargo-install`);
+			await execAndSucceed('cargo', ['install', tool]);
+		}
+	}
+}
+
 async function runCargoRelease(
 	crates: CrateDetails[],
 	version: string,
 	branchName: string
 ): Promise<string> {
-	debug('checking for presence of cargo-release');
-	if (!(await toolExists('cargo-release'))) {
-		warning('cargo-release is not available, attempting to install it');
-
-		if (await toolExists('cargo-binstall')) {
-			info('trying to install cargo-release with cargo-binstall');
-			await execAndSucceed('cargo', [
-				'binstall',
-				'--no-confirm',
-				'cargo-release'
-			]);
-		} else {
-			info('trying to install cargo-release with cargo-install');
-			await execAndSucceed('cargo', ['install', 'cargo-release']);
-		}
-	}
+	await installToolIfNotExists('cargo-release');
 
 	debug('running cargo release');
 	const workspaceRoot: string = JSON.parse(
@@ -488,16 +488,21 @@ function realpath(path: string): string {
 	return resolve(workdir, normalize(path));
 }
 
-type WorkspaceMemberString = `${string} ${string} (${string})`;
+interface WorkspaceMember {
+	name: string;
+	version: string;
+	location: string;
+	private: boolean;
+}
 
 async function pkgid(crate: CrateArgs): Promise<CrateDetails[]> {
-	// we actually use cargo-metadata so it works without a Cargo.lock
-	// and equally well for single crates and workspace crates, but the
-	// API is unchanged from original, like if this was pkgid.
+	await installToolIfNotExists('cargo-workspaces');
 
-	const pkgs: WorkspaceMemberString[] = JSON.parse(
-		await execWithOutput('cargo', ['metadata', '--format-version=1'])
-	)?.workspace_members;
+	const pkgs: CrateDetails[] = (
+		JSON.parse(
+			await execWithOutput('cargo', ['workspaces', 'list', '--json'])
+		) as WorkspaceMember[]
+	).map(({name, version, location}) => ({name, version, path: location}));
 	debug(`got workspace members: ${JSON.stringify(pkgs)}`);
 
 	// only bother looping if we're searching for something
@@ -510,20 +515,15 @@ async function pkgid(crate: CrateArgs): Promise<CrateDetails[]> {
 		debug(`realpath of crate.path: ${cratePath}`);
 
 		for (const pkg of pkgs) {
-			const parsed = parseWorkspacePkg(pkg);
-			if (!parsed) continue;
-
 			if (
-				(crate.name && crate.name === parsed.name) ||
-				(cratePath && cratePath === parsed.path)
+				(crate.name && crate.name === pkg.name) ||
+				(cratePath && cratePath === pkg.path)
 			)
-				return [parsed];
+				return [pkg];
 		}
 	} else if (pkgs.length === 1) {
 		info('only one crate in workspace, assuming that is it');
-		const parsed = parseWorkspacePkg(pkgs[0]);
-		if (!parsed) throw new Error('no good crate found');
-		return [parsed];
+		return pkgs;
 	} else {
 		if (!crate.releaseAll) {
 			throw new Error(
@@ -537,21 +537,18 @@ async function pkgid(crate: CrateArgs): Promise<CrateDetails[]> {
 		let previousVersion = null;
 
 		for (const pkg of pkgs) {
-			const p = parseWorkspacePkg(pkg);
-			if (p) {
-				// ensure that all packages in the workspace have the same version
-				if (!previousVersion) {
-					previousVersion = p.version;
-				} else {
-					if (p.version !== previousVersion) {
-						throw new Error(
-							`multiple crates with different versions: crate=${p.name} version=${p.version} expected=${previousVersion}`
-						);
-					}
+			// ensure that all packages in the workspace have the same version
+			if (!previousVersion) {
+				previousVersion = pkg.version;
+			} else {
+				if (pkg.version !== previousVersion) {
+					throw new Error(
+						`multiple crates with different versions: crate=${pkg.name} version=${pkg.version} expected=${previousVersion}`
+					);
 				}
-
-				parsed.push(p);
 			}
+
+			parsed.push(pkg);
 		}
 
 		if (!parsed.length) throw new Error('no good crates found');
@@ -559,28 +556,4 @@ async function pkgid(crate: CrateArgs): Promise<CrateDetails[]> {
 	}
 
 	throw new Error('no matching crate found');
-}
-
-function parseWorkspacePkg(pkg: string): CrateDetails | null {
-	debug(`parsing workspace package: "${pkg}"`);
-	const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+)\)$/);
-	if (!split) {
-		warning(`could not parse package format: "${pkg}", skipping`);
-		return null;
-	}
-
-	const [, name, version, url] = split;
-
-	const {protocol, pathname} = new URL(url);
-	if (protocol !== 'file:')
-		throw new Error('pkgid is returning a non-local crate');
-
-	debug(`got pathname: ${pathname}`);
-	const path = realpath(pathname);
-	debug(`got realpath: ${path}`);
-
-	debug(`got crate name: ${name}`);
-	debug(`got crate version: ${version}`);
-
-	return {name, path, version};
 }

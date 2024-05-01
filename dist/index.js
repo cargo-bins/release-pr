@@ -121,24 +121,23 @@ async function findCrates({ name, path, releaseAll }) {
         }
     }
 }
-async function runCargoRelease(crates, version, branchName) {
-    var _a, _b, _c, _d, _e;
-    (0, core_1.debug)('checking for presence of cargo-release');
-    if (!(await toolExists('cargo-release'))) {
-        (0, core_1.warning)('cargo-release is not available, attempting to install it');
+async function installToolIfNotExists(tool) {
+    (0, core_1.debug)(`checking for presence of ${tool}`);
+    if (!(await toolExists(tool))) {
+        (0, core_1.warning)(`${tool} is not available, attempting to install it`);
         if (await toolExists('cargo-binstall')) {
-            (0, core_1.info)('trying to install cargo-release with cargo-binstall');
-            await execAndSucceed('cargo', [
-                'binstall',
-                '--no-confirm',
-                'cargo-release'
-            ]);
+            (0, core_1.info)(`trying to install ${tool} with cargo-binstall`);
+            await execAndSucceed('cargo', ['binstall', '--no-confirm', tool]);
         }
         else {
-            (0, core_1.info)('trying to install cargo-release with cargo-install');
-            await execAndSucceed('cargo', ['install', 'cargo-release']);
+            (0, core_1.info)(`trying to install ${tool} with cargo-install`);
+            await execAndSucceed('cargo', ['install', tool]);
         }
     }
+}
+async function runCargoRelease(crates, version, branchName) {
+    var _a, _b, _c, _d, _e;
+    await installToolIfNotExists('cargo-release');
     (0, core_1.debug)('running cargo release');
     const workspaceRoot = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_root;
     (0, core_1.debug)(`got workspace root: ${workspaceRoot}`);
@@ -311,11 +310,8 @@ function realpath(path) {
     return (0, path_1.resolve)(workdir, (0, path_1.normalize)(path));
 }
 async function pkgid(crate) {
-    // we actually use cargo-metadata so it works without a Cargo.lock
-    // and equally well for single crates and workspace crates, but the
-    // API is unchanged from original, like if this was pkgid.
-    var _a;
-    const pkgs = (_a = JSON.parse(await execWithOutput('cargo', ['metadata', '--format-version=1']))) === null || _a === void 0 ? void 0 : _a.workspace_members;
+    await installToolIfNotExists('cargo-workspaces');
+    const pkgs = JSON.parse(await execWithOutput('cargo', ['workspaces', 'list', '--json'])).map(({ name, version, location }) => ({ name, version, path: location }));
     (0, core_1.debug)(`got workspace members: ${JSON.stringify(pkgs)}`);
     // only bother looping if we're searching for something
     if (crate.name || crate.path) {
@@ -323,20 +319,14 @@ async function pkgid(crate) {
         const cratePath = crate.path && realpath(crate.path);
         (0, core_1.debug)(`realpath of crate.path: ${cratePath}`);
         for (const pkg of pkgs) {
-            const parsed = parseWorkspacePkg(pkg);
-            if (!parsed)
-                continue;
-            if ((crate.name && crate.name === parsed.name) ||
-                (cratePath && cratePath === parsed.path))
-                return [parsed];
+            if ((crate.name && crate.name === pkg.name) ||
+                (cratePath && cratePath === pkg.path))
+                return [pkg];
         }
     }
     else if (pkgs.length === 1) {
         (0, core_1.info)('only one crate in workspace, assuming that is it');
-        const parsed = parseWorkspacePkg(pkgs[0]);
-        if (!parsed)
-            throw new Error('no good crate found');
-        return [parsed];
+        return pkgs;
     }
     else {
         if (!crate.releaseAll) {
@@ -346,43 +336,22 @@ async function pkgid(crate) {
         const parsed = [];
         let previousVersion = null;
         for (const pkg of pkgs) {
-            const p = parseWorkspacePkg(pkg);
-            if (p) {
-                // ensure that all packages in the workspace have the same version
-                if (!previousVersion) {
-                    previousVersion = p.version;
-                }
-                else {
-                    if (p.version !== previousVersion) {
-                        throw new Error(`multiple crates with different versions: crate=${p.name} version=${p.version} expected=${previousVersion}`);
-                    }
-                }
-                parsed.push(p);
+            // ensure that all packages in the workspace have the same version
+            if (!previousVersion) {
+                previousVersion = pkg.version;
             }
+            else {
+                if (pkg.version !== previousVersion) {
+                    throw new Error(`multiple crates with different versions: crate=${pkg.name} version=${pkg.version} expected=${previousVersion}`);
+                }
+            }
+            parsed.push(pkg);
         }
         if (!parsed.length)
             throw new Error('no good crates found');
         return parsed;
     }
     throw new Error('no matching crate found');
-}
-function parseWorkspacePkg(pkg) {
-    (0, core_1.debug)(`parsing workspace package: "${pkg}"`);
-    const split = pkg.match(/^(\S+) (\S+) \(path\+(file:[/]{2}.+)\)$/);
-    if (!split) {
-        (0, core_1.warning)(`could not parse package format: "${pkg}", skipping`);
-        return null;
-    }
-    const [, name, version, url] = split;
-    const { protocol, pathname } = new URL(url);
-    if (protocol !== 'file:')
-        throw new Error('pkgid is returning a non-local crate');
-    (0, core_1.debug)(`got pathname: ${pathname}`);
-    const path = realpath(pathname);
-    (0, core_1.debug)(`got realpath: ${path}`);
-    (0, core_1.debug)(`got crate name: ${name}`);
-    (0, core_1.debug)(`got crate version: ${version}`);
-    return { name, path, version };
 }
 
 
