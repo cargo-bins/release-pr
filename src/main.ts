@@ -1,5 +1,6 @@
 import {promises as fs} from 'fs';
 import {join, normalize, resolve} from 'path';
+import * as stream from 'stream'
 
 import {
 	setFailed,
@@ -450,6 +451,11 @@ function render(template: string, vars: TemplateVars): string {
 	return _render(template, vars);
 }
 
+async function openDevNullWritable(): Promise<stream.Writable> {
+	const file = await fs.open("/dev/null");
+    return file.createWriteStream();
+}
+
 async function execAndSucceed(
 	program: string,
 	args: string[],
@@ -467,8 +473,8 @@ async function toolExists(name: string): Promise<boolean> {
 			name,
 			['--help'],
 			{
-				outStream: fs.createWriteStream('/dev/null'),
-				errStream: fs.createWriteStream('/dev/null'),
+				outStream: await openDevNullWritable(),
+				errStream: await openDevNullWritable(),
 			},
 		);
 		debug(`program exited with code ${code}`);
