@@ -463,7 +463,14 @@ async function execAndSucceed(
 async function toolExists(name: string): Promise<boolean> {
 	try {
 		debug(`running "${name} --help"`);
-		const code = await _exec(name, ['--help']);
+		const code = await _exec(
+			name,
+			['--help'],
+			{
+				outStream: fs.createWriteStream('/dev/null'),
+				errStream: fs.createWriteStream('/dev/null'),
+			},
+		);
 		debug(`program exited with code ${code}`);
 		return code === 0;
 	} catch (err) {
