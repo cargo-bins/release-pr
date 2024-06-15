@@ -461,9 +461,12 @@ async function execAndSucceed(
 	args: string[],
 	options: ExecOptions = {}
 ): Promise<void> {
-	debug(`running ${program} with arguments: ${JSON.stringify(args)}`);
-	const exit = await _exec(program, args, options);
-	if (exit !== 0) throw new Error(`${program} exited with code ${exit}`);
+	return await core.group(`running ${program} with arguments: ${JSON.stringify(args)}`, async () => {
+		const exit = await _exec(program, args, options);
+		if (exit !== 0) {
+			throw new Error(`${program} exited with code ${exit}`);
+		}
+	});
 }
 
 async function toolExists(name: string): Promise<boolean> {
@@ -489,11 +492,13 @@ async function execWithOutput(
 	program: string,
 	args: string[]
 ): Promise<string> {
-	debug(`running ${program} with arguments: ${JSON.stringify(args)}`);
-	const {exitCode, stdout} = await getExecOutput(program, args);
-	if (exitCode !== 0)
-		throw new Error(`${program} exited with code ${exitCode}`);
-	return stdout;
+	return await core.group(`running ${program} with arguments: ${JSON.stringify(args)}`, async () => {
+		const {exitCode, stdout} = await getExecOutput(program, args);
+		if (exitCode !== 0) {
+			throw new Error(`${program} exited with code ${exitCode}`);
+		}
+		return stdout;
+	});
 }
 
 function realpath(path: string): string {
