@@ -281,7 +281,7 @@ function render(template, vars) {
     return (0, ejs_1.render)(template, vars);
 }
 async function openDevNullWritable() {
-    const file = await fs_1.promises.open("/dev/null");
+    const file = await fs_1.promises.open('/dev/null');
     return file.createWriteStream();
 }
 async function execAndSucceed(program, args, options = {}) {
@@ -297,7 +297,7 @@ async function toolExists(name) {
         (0, core_1.debug)(`running "${name} --help"`);
         const code = await (0, exec_1.exec)(name, ['--help'], {
             outStream: await openDevNullWritable(),
-            errStream: await openDevNullWritable(),
+            errStream: await openDevNullWritable()
         });
         (0, core_1.debug)(`program exited with code ${code}`);
         return code === 0;
