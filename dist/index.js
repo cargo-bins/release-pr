@@ -280,16 +280,25 @@ async function makePR(octokit, inputs, crateDetails, baseBranch, branchName, new
 function render(template, vars) {
     return (0, ejs_1.render)(template, vars);
 }
+async function openDevNullWritable() {
+    const file = await fs_1.promises.open("/dev/null");
+    return file.createWriteStream();
+}
 async function execAndSucceed(program, args, options = {}) {
-    (0, core_1.debug)(`running ${program} with arguments: ${JSON.stringify(args)}`);
-    const exit = await (0, exec_1.exec)(program, args, options);
-    if (exit !== 0)
-        throw new Error(`${program} exited with code ${exit}`);
+    return await (0, core_1.group)(`running ${program} with arguments: ${JSON.stringify(args)}`, async () => {
+        const exit = await (0, exec_1.exec)(program, args, options);
+        if (exit !== 0) {
+            throw new Error(`${program} exited with code ${exit}`);
+        }
+    });
 }
 async function toolExists(name) {
     try {
         (0, core_1.debug)(`running "${name} --help"`);
-        const code = await (0, exec_1.exec)(name, ['--help']);
+        const code = await (0, exec_1.exec)(name, ['--help'], {
+            outStream: await openDevNullWritable(),
+            errStream: await openDevNullWritable(),
+        });
         (0, core_1.debug)(`program exited with code ${code}`);
         return code === 0;
     }
@@ -299,11 +308,13 @@ async function toolExists(name) {
     }
 }
 async function execWithOutput(program, args) {
-    (0, core_1.debug)(`running ${program} with arguments: ${JSON.stringify(args)}`);
-    const { exitCode, stdout } = await (0, exec_1.getExecOutput)(program, args);
-    if (exitCode !== 0)
-        throw new Error(`${program} exited with code ${exitCode}`);
-    return stdout;
+    return await (0, core_1.group)(`running ${program} with arguments: ${JSON.stringify(args)}`, async () => {
+        const { exitCode, stdout } = await (0, exec_1.getExecOutput)(program, args);
+        if (exitCode !== 0) {
+            throw new Error(`${program} exited with code ${exitCode}`);
+        }
+        return stdout;
+    });
 }
 function realpath(path) {
     const workdir = process.cwd();
