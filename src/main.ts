@@ -1,5 +1,6 @@
 import {promises as fs} from 'fs';
 import {join, normalize, resolve} from 'path';
+import * as stream from 'stream';
 
 import {
 	setFailed,
@@ -7,7 +8,8 @@ import {
 	debug,
 	setOutput,
 	error as _error,
-	warning
+	warning,
+	group
 } from '@actions/core';
 import {exec as _exec, ExecOptions, getExecOutput} from '@actions/exec';
 import {getOctokit, context} from '@actions/github';
@@ -450,20 +452,34 @@ function render(template: string, vars: TemplateVars): string {
 	return _render(template, vars);
 }
 
+async function openDevNullWritable(): Promise<stream.Writable> {
+	const file = await fs.open('/dev/null');
+	return file.createWriteStream();
+}
+
 async function execAndSucceed(
 	program: string,
 	args: string[],
 	options: ExecOptions = {}
 ): Promise<void> {
-	debug(`running ${program} with arguments: ${JSON.stringify(args)}`);
-	const exit = await _exec(program, args, options);
-	if (exit !== 0) throw new Error(`${program} exited with code ${exit}`);
+	return await group(
+		`running ${program} with arguments: ${JSON.stringify(args)}`,
+		async () => {
+			const exit = await _exec(program, args, options);
+			if (exit !== 0) {
+				throw new Error(`${program} exited with code ${exit}`);
+			}
+		}
+	);
 }
 
 async function toolExists(name: string): Promise<boolean> {
 	try {
 		debug(`running "${name} --help"`);
-		const code = await _exec(name, ['--help']);
+		const code = await _exec(name, ['--help'], {
+			outStream: await openDevNullWritable(),
+			errStream: await openDevNullWritable()
+		});
 		debug(`program exited with code ${code}`);
 		return code === 0;
 	} catch (err) {
@@ -476,11 +492,16 @@ async function execWithOutput(
 	program: string,
 	args: string[]
 ): Promise<string> {
-	debug(`running ${program} with arguments: ${JSON.stringify(args)}`);
-	const {exitCode, stdout} = await getExecOutput(program, args);
-	if (exitCode !== 0)
-		throw new Error(`${program} exited with code ${exitCode}`);
-	return stdout;
+	return await group(
+		`running ${program} with arguments: ${JSON.stringify(args)}`,
+		async () => {
+			const {exitCode, stdout} = await getExecOutput(program, args);
+			if (exitCode !== 0) {
+				throw new Error(`${program} exited with code ${exitCode}`);
+			}
+			return stdout;
+		}
+	);
 }
 
 function realpath(path: string): string {
