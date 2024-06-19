@@ -281,7 +281,7 @@ function render(template, vars) {
     return (0, ejs_1.render)(template, vars);
 }
 async function openDevNullWritable() {
-    const file = await fs_1.promises.open('/dev/null');
+    const file = await fs_1.promises.open('/dev/null', 'w');
     return file.createWriteStream();
 }
 async function execAndSucceed(program, args, options = {}) {
