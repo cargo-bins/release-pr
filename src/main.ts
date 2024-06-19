@@ -453,7 +453,7 @@ function render(template: string, vars: TemplateVars): string {
 }
 
 async function openDevNullWritable(): Promise<stream.Writable> {
-	const file = await fs.open('/dev/null');
+	const file = await fs.open('/dev/null', 'w');
 	return file.createWriteStream();
 }
 
